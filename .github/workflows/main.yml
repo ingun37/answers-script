@@ -27,16 +27,11 @@ jobs:
       - uses: cachix/install-nix-action@v15
         with:
           nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
+            substituters = https://cache.nixos.org/ https://hydra.iohk.io
       # Runs a single command using the runners shell
-      - name: nix.conf before
-        run: cat /etc/nix/nix.conf
-
-      - name: edit nix.conf
-        run: |
-          sudo echo 'trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=' >> /etc/nix/nix.conf
-          sudo echo 'substituters = https://cache.nixos.org/ https://hydra.iohk.io' >> /etc/nix/nix.conf
-
-      - name: nix.conf after
+      - name: check nix.conf
         run: cat /etc/nix/nix.conf
 
       # Runs a set of commands using the runners shell
