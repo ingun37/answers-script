@@ -32,6 +32,8 @@ dependencies:
 - bytestring
 - utf8-string
 - base16-bytestring
+- pandoc
+- text
 
 library:
   source-dirs: src
