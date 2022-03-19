@@ -32,6 +32,10 @@ dependencies:
 - bytestring
 - utf8-string
 - base16-bytestring
+- pandoc
+- text
+- lens
+- optparse-applicative
 
 library:
   source-dirs: src
