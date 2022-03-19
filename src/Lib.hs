@@ -131,7 +131,7 @@ mdTraverse prefixPath assetsPath relTo (path, content) = do
   mapM_ (createDirectoryIfMissing True . (assetsPath </>) . dropFileName) matches
   mapM_ (\m -> copyFile (mdDir </> m) (assetsPath </> m)) matches
   let rel = makeRelative relTo assetsPath
-  let subImageTag = gsub imgRegex (\(d : _) -> Txt.concat ["![](/", Txt.pack prefixPath, Txt.pack rel, "/", d, ")"] :: Text)
+  let subImageTag = gsub imgRegex (\(d : _) -> Txt.concat ["![](/", Txt.pack prefixPath, "/", Txt.pack rel, "/", d, ")"] :: Text)
   let md = subDisplayMathBlock $ subInlineMathBlock $subImageTag content
   mdToHTML md
 
