@@ -96,15 +96,15 @@ filterHiddenDirsAndNothings =
         _ -> False
     )
 
-parse :: FilePath -> FilePath -> IO ()
-parse src dst = do
+parse :: String -> FilePath -> FilePath -> IO ()
+parse prefixPath src dst = do
   anchored <- readDirectoryWithL TxtIO.readFile src
   let tree = fromJust <$> filterHiddenDirsAndNothings (mmm <$> zipPaths anchored)
   let imgDst = dst </> "imgs"
   let dbDst = dst </> "db"
   let f = \x -> removePathForcibly x >> createDirectoryIfMissing True x -- clean the directory by removing and then making again
   mapM_ f [imgDst, dbDst]
-  mdDir' <- traverse (either return (mdTraverse imgDst dst)) tree
+  mdDir' <- traverse (either return (mdTraverse prefixPath imgDst dst)) tree
   let (Dir name entries) = mdDir'
   mapM_ (writeJson' dbDst) (flatten (makeTr name "" entries))
 
@@ -123,15 +123,15 @@ mdToHTML txt =
 
 -- change ![](a/b/c.jpg) to ![](assets/{$1}/c.jpg)
 -- copy all the images to assets/$1/
-mdTraverse :: FilePath -> FilePath -> (FilePath, Text) -> IO Text
-mdTraverse assetsPath relTo (path, content) = do
+mdTraverse :: String -> FilePath -> FilePath -> (FilePath, Text) -> IO Text
+mdTraverse prefixPath assetsPath relTo (path, content) = do
   let imgRegex = compile "!\\[\\]\\((?!http)(.+?)\\)" []
   let mdDir = dropFileName path
   let matches = map (Txt.unpack . head . snd) $ scan imgRegex content :: [FilePath]
   mapM_ (createDirectoryIfMissing True . (assetsPath </>) . dropFileName) matches
   mapM_ (\m -> copyFile (mdDir </> m) (assetsPath </> m)) matches
   let rel = makeRelative relTo assetsPath
-  let subImageTag = gsub imgRegex (\(d : _) -> Txt.concat ["![](/", Txt.pack rel, "/", d, ")"] :: Text)
+  let subImageTag = gsub imgRegex (\(d : _) -> Txt.concat ["![](/", Txt.pack prefixPath, Txt.pack rel, "/", d, ")"] :: Text)
   let md = subDisplayMathBlock $ subInlineMathBlock $subImageTag content
   mdToHTML md
 

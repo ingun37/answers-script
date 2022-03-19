@@ -41,6 +41,7 @@ library
     , directory-tree
     , filepath
     , lens
+    , optparse-applicative
     , pandoc
     , pcre-heavy
     , pcre-light
@@ -67,6 +68,7 @@ executable answers-script-exe
     , directory-tree
     , filepath
     , lens
+    , optparse-applicative
     , pandoc
     , pcre-heavy
     , pcre-light
@@ -96,6 +98,7 @@ test-suite answers-script-test
     , filepath
     , hspec
     , lens
+    , optparse-applicative
     , pandoc
     , pcre-heavy
     , pcre-light

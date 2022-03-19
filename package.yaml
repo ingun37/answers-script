@@ -35,6 +35,7 @@ dependencies:
 - pandoc
 - text
 - lens
+- optparse-applicative
 
 library:
   source-dirs: src
