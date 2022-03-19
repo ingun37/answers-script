@@ -4,6 +4,7 @@
 
 module Lib (parse) where
 
+import Control.Lens (over)
 import Crypto.Hash.SHA1 as SHA (hash)
 import Data.Aeson (ToJSON)
 import Data.Aeson as J (encode)
@@ -12,6 +13,7 @@ import Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
 import Data.ByteString.Lazy.UTF8 (toString)
 import Data.Map (Map, fromList)
+import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as Txt (concat, pack, strip, unpack)
 import qualified Data.Text.IO as TxtIO (readFile)
@@ -23,6 +25,8 @@ import System.Directory.Tree
     filterDir,
     readDirectoryWithL,
     zipPaths,
+    (</$>),
+    _dirTree,
   )
 import System.FilePath.Posix (dropFileName, isExtensionOf, makeRelative, takeBaseName, takeFileName, (-<.>), (</>))
 import Text.Pandoc
@@ -79,26 +83,28 @@ writeJson' dst =
       g = toString . J.encode -- make json from Node
    in uncurry writeFile . bimap f g . (\x -> (x, x)) -- dup :: a -> (a,a)
 
-myFilter =
+mmm (path, txt)
+  | ".md" `isExtensionOf` path = Just (Right (path, txt))
+  | ".txt" `isExtensionOf` path = Just (Left txt)
+  | otherwise = Nothing
+
+filterHiddenDirsAndNothings =
   filterDir
     ( \case
         (Dir name _) -> head name /= '.'
-        (File name _) -> ".md" `isExtensionOf` name
-        _ -> True
+        (File _ m) -> isJust m
+        _ -> False
     )
-
-data AllowedFileType = Markdown String | PlainText String
 
 parse :: FilePath -> FilePath -> IO ()
 parse src dst = do
   anchored <- readDirectoryWithL TxtIO.readFile src
-  let anchorRemoved = zipPaths anchored
-  let mdDir = myFilter anchorRemoved
+  let tree = fromJust <$> filterHiddenDirsAndNothings (mmm <$> zipPaths anchored)
   let imgDst = dst </> "imgs"
   let dbDst = dst </> "db"
   let f = \x -> removePathForcibly x >> createDirectoryIfMissing True x -- clean the directory by removing and then making again
   mapM_ f [imgDst, dbDst]
-  mdDir' <- traverse (mdTraverse imgDst dst) mdDir
+  mdDir' <- traverse (either return (mdTraverse imgDst dst)) tree
   let (Dir name entries) = mdDir'
   mapM_ (writeJson' dbDst) (flatten (makeTr name "" entries))
 

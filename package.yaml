@@ -34,6 +34,7 @@ dependencies:
 - base16-bytestring
 - pandoc
 - text
+- lens
 
 library:
   source-dirs: src

@@ -40,6 +40,7 @@ library
     , directory
     , directory-tree
     , filepath
+    , lens
     , pandoc
     , pcre-heavy
     , pcre-light
@@ -65,6 +66,7 @@ executable answers-script-exe
     , directory
     , directory-tree
     , filepath
+    , lens
     , pandoc
     , pcre-heavy
     , pcre-light
@@ -93,6 +95,7 @@ test-suite answers-script-test
     , directory-tree
     , filepath
     , hspec
+    , lens
     , pandoc
     , pcre-heavy
     , pcre-light
