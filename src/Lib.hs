@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lib (parse) where
@@ -76,13 +77,21 @@ writeJson' dst =
       g = toString . J.encode -- make json from Node
    in uncurry writeFile . bimap f g . (\x -> (x, x)) -- dup :: a -> (a,a)
 
-dirFilter :: DirTree a -> Bool
-dirFilter (File name _) = ".md" `isExtensionOf` name
-dirFilter _ = True
+myFilter =
+  filterDir
+    ( \case
+        (Dir name _) -> head name /= '.'
+        (File name _) -> ".md" `isExtensionOf` name
+        _ -> True
+    )
+
+data AllowedFileType = Markdown String | PlainText String
 
 parse :: FilePath -> FilePath -> IO ()
 parse src dst = do
-  mdDir <- filterDir dirFilter . zipPaths <$> readDirectoryWithL readFile src
+  anchored <- readDirectoryWithL readFile src
+  let anchorRemoved = zipPaths anchored
+  let mdDir = myFilter anchorRemoved
   let imgDst = dst </> "imgs"
   let dbDst = dst </> "db"
   let f = \x -> removePathForcibly x >> createDirectoryIfMissing True x -- clean the directory by removing and then making again
