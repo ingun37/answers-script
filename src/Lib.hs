@@ -12,7 +12,9 @@ import Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
 import Data.ByteString.Lazy.UTF8 (toString)
 import Data.Map (Map, fromList)
-import qualified Data.Text as Txt (Text, pack, strip, unpack)
+import Data.Text (Text)
+import qualified Data.Text as Txt (concat, pack, strip, unpack)
+import qualified Data.Text.IO as TxtIO (readFile)
 import Data.Tree (Tree (Node), flatten, rootLabel)
 import GHC.Generics (Generic)
 import System.Directory (copyFile, createDirectoryIfMissing, removePathForcibly)
@@ -42,7 +44,7 @@ import Text.Regex.PCRE.Light (compile, dotall, multiline)
 data Item = Item
   { title :: String,
     sha1 :: String,
-    attr :: Map String String
+    attr :: Map String Text
   }
   deriving (Generic, Show)
 
@@ -58,7 +60,7 @@ sha1InHex = C8.unpack . B16.encode . SHA.hash . C8.pack
 
 -- Tree, rootLabel, Node, flatten
 --it generates tree from bottom-up (dynamic programming)
-makeTr :: String -> String -> [DirTree String] -> Tree TemTree
+makeTr :: String -> String -> [DirTree Text] -> Tree TemTree
 makeTr path parentSha1 entries =
   let sha1 = sha1InHex path
       kidTrs = [makeTr (path </> title) sha1 entries' | Dir title entries' <- entries]
@@ -89,7 +91,7 @@ data AllowedFileType = Markdown String | PlainText String
 
 parse :: FilePath -> FilePath -> IO ()
 parse src dst = do
-  anchored <- readDirectoryWithL readFile src
+  anchored <- readDirectoryWithL TxtIO.readFile src
   let anchorRemoved = zipPaths anchored
   let mdDir = myFilter anchorRemoved
   let imgDst = dst </> "imgs"
@@ -100,7 +102,7 @@ parse src dst = do
   let (Dir name entries) = mdDir'
   mapM_ (writeJson' dbDst) (flatten (makeTr name "" entries))
 
-mdToHTML :: Txt.Text -> IO Txt.Text
+mdToHTML :: Text -> IO Text
 mdToHTML txt =
   runIOorExplode $
     readMarkdown
@@ -115,26 +117,26 @@ mdToHTML txt =
 
 -- change ![](a/b/c.jpg) to ![](assets/{$1}/c.jpg)
 -- copy all the images to assets/$1/
-mdTraverse :: FilePath -> FilePath -> (FilePath, String) -> IO String
+mdTraverse :: FilePath -> FilePath -> (FilePath, Text) -> IO Text
 mdTraverse assetsPath relTo (path, content) = do
   let imgRegex = compile "!\\[\\]\\((?!http)(.+?)\\)" []
   let mdDir = dropFileName path
-  let matches = map (head . snd) $ scan imgRegex content
+  let matches = map (Txt.unpack . head . snd) $ scan imgRegex content :: [FilePath]
   mapM_ (createDirectoryIfMissing True . (assetsPath </>) . dropFileName) matches
   mapM_ (\m -> copyFile (mdDir </> m) (assetsPath </> m)) matches
   let rel = makeRelative relTo assetsPath
-  let md = subDisplayMathBlock $ subInlineMathBlock $ gsub imgRegex (\(d : _) -> "![](/" ++ rel ++ "/" ++ d ++ ")" :: String) content
-  html <- mdToHTML (Txt.pack md)
-  return $ Txt.unpack html
+  let subImageTag = gsub imgRegex (\(d : _) -> Txt.concat ["![](/", Txt.pack rel, "/", d, ")"] :: Text)
+  let md = subDisplayMathBlock $ subInlineMathBlock $subImageTag content
+  mdToHTML md
 
-subInlineMathBlock :: String -> String
+subInlineMathBlock :: Text -> Text
 subInlineMathBlock =
   let imgRegex = compile "\\$`(.+?)`\\$" []
    in gsub imgRegex (\(d : _) -> "\\\\(" ++ d ++ "\\\\)" :: String)
 
 stripString = Txt.unpack . Txt.strip . Txt.pack
 
-subDisplayMathBlock :: String -> String
+subDisplayMathBlock :: Text -> Text
 subDisplayMathBlock =
   let imgRegex = compile "^```math$(.+?)^```$" [multiline, dotall]
    in gsub imgRegex (\(d : _) -> "\\\\[" ++ stripString d ++ "\\\\]" :: String)
