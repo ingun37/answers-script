@@ -23,7 +23,7 @@ import System.Directory.Tree
   )
 import System.FilePath.Posix (dropFileName, isExtensionOf, makeRelative, takeBaseName, takeFileName, (-<.>), (</>))
 import Text.Pandoc
-  ( Extension (Ext_tex_math_dollars, Ext_tex_math_double_backslash),
+  ( Extension (Ext_pipe_tables, Ext_tex_math_dollars, Ext_tex_math_double_backslash),
     HTMLMathMethod (KaTeX),
     def,
     defaultKaTeXURL,
@@ -35,7 +35,7 @@ import Text.Pandoc
     writerHTMLMathMethod,
   )
 import Text.Regex.PCRE.Heavy (gsub, scan)
-import Text.Regex.PCRE.Light (compile, multiline, dotall)
+import Text.Regex.PCRE.Light (compile, dotall, multiline)
 
 data Item = Item
   { title :: String,
@@ -95,7 +95,7 @@ mdToHTML txt =
   runIOorExplode $
     readMarkdown
       def
-        { readerExtensions = extensionsFromList [Ext_tex_math_double_backslash]
+        { readerExtensions = extensionsFromList [Ext_tex_math_double_backslash, Ext_pipe_tables]
         }
       txt
       >>= writeHtml5String
