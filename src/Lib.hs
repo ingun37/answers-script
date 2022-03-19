@@ -28,6 +28,7 @@ import Text.Pandoc
     def,
     defaultKaTeXURL,
     extensionsFromList,
+    githubMarkdownExtensions,
     readMarkdown,
     readerExtensions,
     runIOorExplode,
@@ -95,7 +96,7 @@ mdToHTML txt =
   runIOorExplode $
     readMarkdown
       def
-        { readerExtensions = extensionsFromList [Ext_tex_math_double_backslash, Ext_pipe_tables]
+        { readerExtensions = githubMarkdownExtensions <> extensionsFromList [Ext_tex_math_double_backslash, Ext_pipe_tables]
         }
       txt
       >>= writeHtml5String
