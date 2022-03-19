@@ -11,7 +11,7 @@ import Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
 import Data.ByteString.Lazy.UTF8 (toString)
 import Data.Map (Map, fromList)
-import qualified Data.Text as Txt (Text, pack, unpack)
+import qualified Data.Text as Txt (Text, pack, strip, unpack)
 import Data.Tree (Tree (Node), flatten, rootLabel)
 import GHC.Generics (Generic)
 import System.Directory (copyFile, createDirectoryIfMissing, removePathForcibly)
@@ -122,9 +122,11 @@ subInlineMathBlock =
   let imgRegex = compile "\\$`(.+?)`\\$" []
    in gsub imgRegex (\(d : _) -> "\\\\(" ++ d ++ "\\\\)" :: String)
 
+stripString = Txt.unpack . Txt.strip . Txt.pack
+
 subDisplayMathBlock :: String -> String
 subDisplayMathBlock =
   let imgRegex = compile "^```math$(.+?)^```$" [multiline, dotall]
-   in gsub imgRegex (\(d : _) -> "\\\\[" ++ d ++ "\\\\]" :: String)
+   in gsub imgRegex (\(d : _) -> "\\\\[" ++ stripString d ++ "\\\\]" :: String)
 
 -- copyFile, createDirectoryIfMissing, removePathForcibly, createDirectoryIfMissing
