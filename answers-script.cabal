@@ -26,7 +26,6 @@ source-repository head
 library
   exposed-modules:
       Lib
-      MyGitHub
   other-modules:
       Paths_answers_script
   hs-source-dirs:
@@ -41,7 +40,6 @@ library
     , directory
     , directory-tree
     , filepath
-    , github
     , lens
     , optparse-applicative
     , pandoc
@@ -69,7 +67,6 @@ executable answers-script-exe
     , directory
     , directory-tree
     , filepath
-    , github
     , lens
     , optparse-applicative
     , pandoc
@@ -99,7 +96,6 @@ test-suite answers-script-test
     , directory
     , directory-tree
     , filepath
-    , github
     , hspec
     , lens
     , optparse-applicative
