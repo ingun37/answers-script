@@ -2,35 +2,31 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Lib (parse) where
+module Lib
+  ( someFunc,
+  )
+where
 
-import Control.Lens (over)
-import Crypto.Hash.SHA1 as SHA (hash)
+import Control.Lens (over, (^.))
+import Control.Monad ((<=<))
+import qualified Crypto.Hash.SHA1 as SHA (hash)
 import Data.Aeson (ToJSON)
-import Data.Aeson as J (encode)
-import Data.Bifunctor (bimap)
-import Data.ByteString.Base16 as B16 (encode)
+import qualified Data.Aeson as J (encode)
+import Data.ByteString (readFile)
+import qualified Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
-import Data.ByteString.Lazy.UTF8 (toString)
+import Data.ByteString.Lazy (writeFile)
 import Data.Map (Map, fromList)
-import Data.Maybe
-import Data.Text (Text)
-import qualified Data.Text as Txt (concat, pack, strip, unpack)
-import qualified Data.Text.IO as TxtIO (readFile)
+import Data.Text (Text, pack, replace, strip, unpack)
+import Data.Text.Encoding (decodeUtf8)
 import Data.Tree (Tree (Node), flatten, rootLabel)
 import GHC.Generics (Generic)
 import System.Directory (copyFile, createDirectoryIfMissing, removePathForcibly)
-import System.Directory.Tree
-  ( DirTree (Dir, File),
-    filterDir,
-    readDirectoryWithL,
-    zipPaths,
-    (</$>),
-    _dirTree,
-  )
-import System.FilePath.Posix (dropFileName, isExtensionOf, makeRelative, takeBaseName, takeFileName, (-<.>), (</>))
+import System.Directory.Tree (DirTree (Dir, File), filterDir, readDirectoryWithL, _dirTree)
+import System.FilePath (dropFileName, isExtensionOf, makeRelative, takeBaseName, takeExtension, takeFileName, (-<.>), splitDirectories)
+import System.FilePath.Posix ((</>))
 import Text.Pandoc
-  ( Extension (Ext_pipe_tables, Ext_tex_math_dollars, Ext_tex_math_double_backslash),
+  ( Extension (Ext_pipe_tables, Ext_tex_math_double_backslash),
     HTMLMathMethod (KaTeX),
     def,
     defaultKaTeXURL,
@@ -44,6 +40,8 @@ import Text.Pandoc
   )
 import Text.Regex.PCRE.Heavy (gsub, scan)
 import Text.Regex.PCRE.Light (compile, dotall, multiline)
+import Prelude hiding (readFile, writeFile)
+import System.FilePath.Posix (joinPath)
 
 data Item = Item
   { title :: String,
@@ -60,53 +58,70 @@ data TemTree = TemTree
   }
   deriving (Generic, Show)
 
-sha1InHex = C8.unpack . B16.encode . SHA.hash . C8.pack
-
--- Tree, rootLabel, Node, flatten
---it generates tree from bottom-up (dynamic programming)
-makeTr :: String -> String -> [DirTree Text] -> Tree TemTree
-makeTr path parentSha1 entries =
-  let sha1 = sha1InHex path
-      kidTrs = [makeTr (path </> title) sha1 entries' | Dir title entries' <- entries]
-      kidItems = Prelude.map (item . rootLabel) kidTrs
-      thisItem = Item (takeFileName path) sha1 (fromList [(takeBaseName name', file) | File name' file <- entries])
-      thisNode = TemTree path thisItem kidItems parentSha1
-   in Node thisNode kidTrs
-
 instance ToJSON Item
 
 instance ToJSON TemTree
 
-writeJson' :: String -> TemTree -> IO ()
-writeJson' dst =
-  let f = (dst </>) . (-<.> ".json") . sha1 . item -- make destination file path from Node
-      g = toString . J.encode -- make json from Node
-   in uncurry writeFile . bimap f g . (\x -> (x, x)) -- dup :: a -> (a,a)
+sha1InHex :: String -> [Char]
+sha1InHex = C8.unpack . B16.encode . SHA.hash . C8.pack
 
-mmm (path, txt)
-  | ".md" `isExtensionOf` path = Just (Right (path, txt))
-  | ".txt" `isExtensionOf` path = Just (Left txt)
-  | otherwise = Nothing
+theReader :: String -> String -> String -> FilePath -> IO Text
+theReader sitePrefix srcDir dstDir fp = do
+  content <- decodeUtf8 <$> readFile fp
+  let ext = takeExtension fp
+  case ext of
+    ".md" -> mdToHTML <=< copyMDMedia sitePrefix srcDir (dropFileName fp) dstDir $ subInlineMathBlock $ subDisplayMathBlock content
+    ".txt" -> return content
+    _ -> return ""
 
-filterHiddenDirsAndNothings =
+theFilter :: DirTree a -> DirTree a
+theFilter =
   filterDir
     ( \case
-        (Dir name _) -> head name /= '.'
-        (File _ m) -> isJust m
+        Dir name _ -> head name /= '.'
+        File name _ -> ".md" `isExtensionOf` name || ".txt" `isExtensionOf` name
         _ -> False
     )
 
-parse :: String -> FilePath -> FilePath -> IO ()
-parse prefixPath src dst = do
-  anchored <- readDirectoryWithL TxtIO.readFile src
-  let tree = fromJust <$> filterHiddenDirsAndNothings (mmm <$> zipPaths anchored)
-  let imgDst = dst </> "imgs"
+writeJson :: String -> TemTree -> IO ()
+writeJson dst tt = writeFile (dst </> (sha1 (item tt) -<.> ".json")) (J.encode tt)
+
+someFunc :: String -> FilePath -> FilePath -> IO ()
+someFunc prefixPath src dst = do
+  anchored <- readDirectoryWithL (theReader prefixPath src dst) src
+  let anchored' = over _dirTree theFilter anchored
   let dbDst = dst </> "db"
-  let f = \x -> removePathForcibly x >> createDirectoryIfMissing True x -- clean the directory by removing and then making again
-  mapM_ f [imgDst, dbDst]
-  mdDir' <- traverse (either return (mdTraverse prefixPath imgDst dst)) tree
-  let (Dir name entries) = mdDir'
-  mapM_ (writeJson' dbDst) (flatten (makeTr name "" entries))
+  removePathForcibly dbDst >> createDirectoryIfMissing True dbDst
+  let (Dir name entries) = anchored' ^. _dirTree
+  mapM_ (writeJson dbDst) (flatten (makeTr name "" entries))
+
+subInlineMathBlock :: Text -> Text
+subInlineMathBlock =
+  let imgRegex = compile "\\$`(.+?)`\\$" []
+   in gsub imgRegex (\(d : _) -> "\\\\(" ++ d ++ "\\\\)" :: String)
+
+stripString :: String -> String
+stripString = unpack . strip . pack
+
+subDisplayMathBlock :: Text -> Text
+subDisplayMathBlock =
+  let imgRegex = compile "^```math$(.+?)^```$" [multiline, dotall]
+   in gsub imgRegex (\(d : _) -> "\\\\[" ++ stripString d ++ "\\\\]" :: String)
+
+copyMDMedia :: String -> FilePath -> FilePath -> FilePath -> Text -> IO Text
+copyMDMedia sitePrefix srcDir mdDir dstDir content = do
+  let imgRegex = compile "!\\[\\]\\((?!http)(.+?)\\)" []
+  let imgNames = map (unpack . head . snd) $ scan imgRegex content
+  if null imgNames
+    then return content
+    else do
+      let rel = makeRelative srcDir mdDir
+      let relToDst = dstDir </> rel
+      createDirectoryIfMissing True relToDst
+      mapM_ (\x -> copyFile (mdDir </> x) (relToDst </> x)) imgNames
+      let g x = joinPath $ filter (/= "/") ([sitePrefix, rel, x] >>= splitDirectories)
+      let f x = mconcat ["![](/", g x, ")"]
+      return $ gsub imgRegex (f . head) content
 
 mdToHTML :: Text -> IO Text
 mdToHTML txt =
@@ -121,30 +136,11 @@ mdToHTML txt =
           { writerHTMLMathMethod = KaTeX defaultKaTeXURL
           }
 
--- change ![](a/b/c.jpg) to ![](assets/{$1}/c.jpg)
--- copy all the images to assets/$1/
-mdTraverse :: String -> FilePath -> FilePath -> (FilePath, Text) -> IO Text
-mdTraverse prefixPath assetsPath relTo (path, content) = do
-  let imgRegex = compile "!\\[\\]\\((?!http)(.+?)\\)" []
-  let mdDir = dropFileName path
-  let matches = map (Txt.unpack . head . snd) $ scan imgRegex content :: [FilePath]
-  mapM_ (createDirectoryIfMissing True . (assetsPath </>) . dropFileName) matches
-  mapM_ (\m -> copyFile (mdDir </> m) (assetsPath </> m)) matches
-  let rel = makeRelative relTo assetsPath
-  let subImageTag = gsub imgRegex (\(d : _) -> Txt.concat ["![](/", Txt.pack prefixPath, "/", Txt.pack rel, "/", d, ")"] :: Text)
-  let md = subDisplayMathBlock $ subInlineMathBlock $subImageTag content
-  mdToHTML md
-
-subInlineMathBlock :: Text -> Text
-subInlineMathBlock =
-  let imgRegex = compile "\\$`(.+?)`\\$" []
-   in gsub imgRegex (\(d : _) -> "\\\\(" ++ d ++ "\\\\)" :: String)
-
-stripString = Txt.unpack . Txt.strip . Txt.pack
-
-subDisplayMathBlock :: Text -> Text
-subDisplayMathBlock =
-  let imgRegex = compile "^```math$(.+?)^```$" [multiline, dotall]
-   in gsub imgRegex (\(d : _) -> "\\\\[" ++ stripString d ++ "\\\\]" :: String)
-
--- copyFile, createDirectoryIfMissing, removePathForcibly, createDirectoryIfMissing
+makeTr :: String -> String -> [DirTree Text] -> Tree TemTree
+makeTr path parentSha1 entries =
+  let sha1 = sha1InHex path
+      kidTrs = [makeTr (path </> title) sha1 entries' | Dir title entries' <- entries]
+      kidItems = map (item . rootLabel) kidTrs
+      thisItem = Item (takeFileName path) sha1 (fromList [(takeBaseName name', file) | File name' file <- entries])
+      thisNode = TemTree path thisItem kidItems parentSha1
+   in Node thisNode kidTrs
