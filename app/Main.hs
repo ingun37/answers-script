@@ -1,10 +1,7 @@
 module Main where
 
-import Data.Semigroup ((<>))
-import Lib (parse)
+import Lib (someFunc)
 import Options.Applicative
-import System.Environment (getArgs)
-import System.Exit (ExitCode (ExitSuccess), exitWith)
 
 data Sample = Sample
   { prefixPath :: String,
@@ -30,7 +27,7 @@ sample =
       )
 
 greet :: Sample -> IO ()
-greet (Sample prefixPath src dst) = parse prefixPath src dst
+greet (Sample prefixPath src dst) = someFunc prefixPath src dst
 
 main :: IO ()
 main = greet =<< execParser opts
