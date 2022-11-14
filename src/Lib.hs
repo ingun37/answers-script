@@ -17,14 +17,14 @@ import qualified Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
 import Data.ByteString.Lazy (writeFile)
 import Data.Map (Map, fromList)
-import Data.Text (Text, pack, replace, strip, unpack)
+import Data.Text (Text, pack, strip, unpack)
 import Data.Text.Encoding (decodeUtf8)
 import Data.Tree (Tree (Node), flatten, rootLabel)
 import GHC.Generics (Generic)
 import System.Directory (copyFile, createDirectoryIfMissing, removePathForcibly)
 import System.Directory.Tree (DirTree (Dir, File), filterDir, readDirectoryWithL, _dirTree)
 import System.FilePath (dropFileName, isExtensionOf, makeRelative, takeBaseName, takeExtension, takeFileName, (-<.>), splitDirectories)
-import System.FilePath.Posix ((</>))
+import System.FilePath.Posix ( (</>), joinPath )
 import Text.Pandoc
   ( Extension (Ext_pipe_tables, Ext_tex_math_double_backslash),
     HTMLMathMethod (KaTeX),
@@ -41,7 +41,6 @@ import Text.Pandoc
 import Text.Regex.PCRE.Heavy (gsub, scan)
 import Text.Regex.PCRE.Light (compile, dotall, multiline)
 import Prelude hiding (readFile, writeFile)
-import System.FilePath.Posix (joinPath)
 
 data Item = Item
   { title :: String,
