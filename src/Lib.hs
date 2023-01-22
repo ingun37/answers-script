@@ -11,7 +11,7 @@ import Control.Lens (over, (^.))
 import Control.Monad ((<=<))
 import qualified Crypto.Hash.SHA1 as SHA (hash)
 import Data.Aeson (ToJSON)
-import qualified Data.Aeson as J (encode)
+import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.ByteString (readFile)
 import qualified Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
@@ -83,7 +83,7 @@ theFilter =
     )
 
 writeJson :: String -> TemTree -> IO ()
-writeJson dst tt = writeFile (dst </> (sha1 (item tt) -<.> ".json")) (J.encode tt)
+writeJson dst tt = writeFile (dst </> (sha1 (item tt) -<.> ".json")) (encodePretty tt)
 
 someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath src dst = do

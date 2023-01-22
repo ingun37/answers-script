@@ -33,6 +33,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       aeson
+    , aeson-pretty
     , base >=4.7 && <5
     , base16-bytestring
     , bytestring
@@ -58,6 +59,7 @@ executable answers-script-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
+    , aeson-pretty
     , answers-script
     , base >=4.7 && <5
     , base16-bytestring
@@ -87,6 +89,7 @@ test-suite answers-script-test
   build-depends:
       QuickCheck
     , aeson
+    , aeson-pretty
     , answers-script
     , base >=4.7 && <5
     , base16-bytestring

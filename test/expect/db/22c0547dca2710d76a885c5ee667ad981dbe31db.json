@@ -1,1 +1,22 @@
-{"item":{"attr":{"author":"Ingun Jon","q":"<p>some book's q.md</p>\n<p><span class=\"math display\">\\cdots</span></p>\n<p><img src=\"/prefix/some%20book/img.png\" /></p>"},"sha1":"22c0547dca2710d76a885c5ee667ad981dbe31db","title":"some book"},"kids":[{"attr":{"a":"<p>it's 3</p>","q":"<p>What is <span class=\"math inline\">1 + 1</span>?</p>"},"sha1":"262d26ddc4b6cf08bd3542ce232fc43acf6004d7","title":"chapter 1"}],"parentSha1":"f27fede2220bcd326aee3e86ddfd4ebd0fe58cb9","path":"src/some book"}
+{
+    "item": {
+        "attr": {
+            "author": "Ingun Jon",
+            "q": "<p>some book's q.md</p>\n<p><span class=\"math display\">\\cdots</span></p>\n<p><img src=\"/prefix/some%20book/img.png\" /></p>"
+        },
+        "sha1": "22c0547dca2710d76a885c5ee667ad981dbe31db",
+        "title": "some book"
+    },
+    "kids": [
+        {
+            "attr": {
+                "a": "<p>it's 3</p>",
+                "q": "<p>What is <span class=\"math inline\">1 + 1</span>?</p>"
+            },
+            "sha1": "262d26ddc4b6cf08bd3542ce232fc43acf6004d7",
+            "title": "chapter 1"
+        }
+    ],
+    "parentSha1": "f27fede2220bcd326aee3e86ddfd4ebd0fe58cb9",
+    "path": "src/some book"
+}
