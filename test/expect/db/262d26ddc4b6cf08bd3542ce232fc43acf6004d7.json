@@ -8,6 +8,7 @@
         "title": "chapter 1"
     },
     "kids": [],
+    "numAnswer": 1,
     "parentSha1": "22c0547dca2710d76a885c5ee667ad981dbe31db",
     "path": "src/some book/chapter 1"
 }

@@ -16,7 +16,7 @@ import Data.ByteString (readFile)
 import qualified Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
 import Data.ByteString.Lazy (writeFile)
-import Data.Map (Map, fromList)
+import Data.Map (Map, fromList, lookup)
 import Data.Text (Text, pack, strip, unpack)
 import Data.Text.Encoding (decodeUtf8)
 import Data.Tree (Tree (Node), flatten, rootLabel)
@@ -40,7 +40,8 @@ import Text.Pandoc
   )
 import Text.Regex.PCRE.Heavy (gsub, scan)
 import Text.Regex.PCRE.Light (compile, dotall, multiline)
-import Prelude hiding (readFile, writeFile)
+import Prelude hiding (lookup, readFile, writeFile)
+import Data.Monoid (Sum (Sum), getSum)
 
 data Item = Item
   { title :: String,
@@ -53,7 +54,8 @@ data TemTree = TemTree
   { path :: String,
     item :: Item,
     kids :: [Item],
-    parentSha1 :: String
+    parentSha1 :: String,
+    numAnswer :: Int
   }
   deriving (Generic, Show)
 
@@ -135,11 +137,15 @@ mdToHTML txt =
           { writerHTMLMathMethod = KaTeX defaultKaTeXURL
           }
 
+countAnswer :: Item -> Sum Int
+countAnswer = maybe 0 (const 1) . lookup "a" . attr
+
 makeTr :: String -> String -> [DirTree Text] -> Tree TemTree
 makeTr path parentSha1 entries =
   let sha1 = sha1InHex path
       kidTrs = [makeTr (path </> title) sha1 entries' | Dir title entries' <- entries]
       kidItems = map (item . rootLabel) kidTrs
       thisItem = Item (takeFileName path) sha1 (fromList [(takeBaseName name', file) | File name' file <- entries])
-      thisNode = TemTree path thisItem kidItems parentSha1
+      answerNumber = getSum $ countAnswer thisItem <> foldMap (Sum . numAnswer . rootLabel) kidTrs
+      thisNode = TemTree path thisItem kidItems parentSha1 answerNumber
    in Node thisNode kidTrs
