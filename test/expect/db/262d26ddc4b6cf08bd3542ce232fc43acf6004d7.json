@@ -4,11 +4,11 @@
             "a": "<p>it's 3</p>",
             "q": "<p>What is <span class=\"math inline\">1 + 1</span>?</p>"
         },
+        "numAnswer": 1,
         "sha1": "262d26ddc4b6cf08bd3542ce232fc43acf6004d7",
         "title": "chapter 1"
     },
     "kids": [],
-    "numAnswer": 1,
     "parentSha1": "22c0547dca2710d76a885c5ee667ad981dbe31db",
     "path": "src/some book/chapter 1"
 }

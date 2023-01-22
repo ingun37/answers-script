@@ -4,11 +4,11 @@
             "a": "<p>it's 5</p>",
             "q": "<p>What is <span class=\"math inline\">2+2</span>?</p>"
         },
+        "numAnswer": 1,
         "sha1": "d2786f0cdc45005f4cd9e4c3bd67870fa7c4c3a1",
         "title": "chapter2"
     },
     "kids": [],
-    "numAnswer": 1,
     "parentSha1": "22c0547dca2710d76a885c5ee667ad981dbe31db",
     "path": "src/some book/chapter2"
 }

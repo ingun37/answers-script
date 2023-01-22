@@ -46,7 +46,8 @@ import Data.Monoid (Sum (Sum), getSum)
 data Item = Item
   { title :: String,
     sha1 :: String,
-    attr :: Map String Text
+    attr :: Map String Text,
+    numAnswer :: Int
   }
   deriving (Generic, Show)
 
@@ -54,8 +55,7 @@ data TemTree = TemTree
   { path :: String,
     item :: Item,
     kids :: [Item],
-    parentSha1 :: String,
-    numAnswer :: Int
+    parentSha1 :: String
   }
   deriving (Generic, Show)
 
@@ -145,7 +145,7 @@ makeTr path parentSha1 entries =
   let sha1 = sha1InHex path
       kidTrs = [makeTr (path </> title) sha1 entries' | Dir title entries' <- entries]
       kidItems = map (item . rootLabel) kidTrs
-      thisItem = Item (takeFileName path) sha1 (fromList [(takeBaseName name', file) | File name' file <- entries])
-      answerNumber = getSum $ countAnswer thisItem <> foldMap (Sum . numAnswer . rootLabel) kidTrs
-      thisNode = TemTree path thisItem kidItems parentSha1 answerNumber
+      answerNumber = getSum $ countAnswer thisItem <> foldMap (Sum . numAnswer) kidItems
+      thisItem = Item (takeFileName path) sha1 (fromList [(takeBaseName name', file) | File name' file <- entries]) answerNumber
+      thisNode = TemTree path thisItem kidItems parentSha1
    in Node thisNode kidTrs
