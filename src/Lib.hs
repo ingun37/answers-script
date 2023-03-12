@@ -17,14 +17,15 @@ import qualified Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
 import Data.ByteString.Lazy (writeFile)
 import Data.Map (Map, fromList, lookup)
+import Data.Monoid (Sum (Sum), getSum)
 import Data.Text (Text, pack, strip, unpack)
 import Data.Text.Encoding (decodeUtf8)
 import Data.Tree (Tree (Node), flatten, rootLabel)
 import GHC.Generics (Generic)
 import System.Directory (copyFile, createDirectoryIfMissing, removePathForcibly)
 import System.Directory.Tree (DirTree (Dir, File), filterDir, readDirectoryWithL, _dirTree)
-import System.FilePath (dropFileName, isExtensionOf, makeRelative, takeBaseName, takeExtension, takeFileName, (-<.>), splitDirectories)
-import System.FilePath.Posix ( (</>), joinPath )
+import System.FilePath (dropFileName, isExtensionOf, makeRelative, splitDirectories, takeBaseName, takeExtension, takeFileName, (-<.>))
+import System.FilePath.Posix (joinPath, (</>))
 import Text.Pandoc
   ( Extension (Ext_pipe_tables, Ext_tex_math_double_backslash),
     HTMLMathMethod (KaTeX),
@@ -41,7 +42,6 @@ import Text.Pandoc
 import Text.Regex.PCRE.Heavy (gsub, scan)
 import Text.Regex.PCRE.Light (compile, dotall, multiline)
 import Prelude hiding (lookup, readFile, writeFile)
-import Data.Monoid (Sum (Sum), getSum)
 
 data Item = Item
   { title :: String,
@@ -67,13 +67,15 @@ sha1InHex :: String -> [Char]
 sha1InHex = C8.unpack . B16.encode . SHA.hash . C8.pack
 
 theReader :: String -> String -> String -> FilePath -> IO Text
-theReader sitePrefix srcDir dstDir fp = do
-  content <- decodeUtf8 <$> readFile fp
+theReader sitePrefix srcDir dstDir fp =
   let ext = takeExtension fp
-  case ext of
-    ".md" -> mdToHTML <=< copyMDMedia sitePrefix srcDir (dropFileName fp) dstDir $ subInlineMathBlock $ subDisplayMathBlock content
-    ".txt" -> return content
-    _ -> return ""
+      readWorth = ext == ".md" || ext == ".txt"
+      content = if readWorth then decodeUtf8 <$> readFile fp else return ""
+      func =
+        if ext == ".md"
+          then mdToHTML <=< copyMDMedia sitePrefix srcDir (dropFileName fp) dstDir . subInlineMathBlock . subDisplayMathBlock
+          else return
+   in content >>= func
 
 theFilter :: DirTree a -> DirTree a
 theFilter =
