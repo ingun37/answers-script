@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Lib
+      MyGit
   other-modules:
       Paths_answers_script
   hs-source-dirs:
@@ -42,6 +43,7 @@ library
     , directory
     , directory-tree
     , filepath
+    , hlibgit2
     , lens
     , pandoc
     , pcre-heavy
@@ -69,6 +71,7 @@ executable answers-script-exe
     , directory
     , directory-tree
     , filepath
+    , hlibgit2
     , lens
     , optparse-applicative
     , pandoc
@@ -99,6 +102,7 @@ test-suite answers-script-test
     , directory
     , directory-tree
     , filepath
+    , hlibgit2
     , hspec
     , lens
     , pandoc

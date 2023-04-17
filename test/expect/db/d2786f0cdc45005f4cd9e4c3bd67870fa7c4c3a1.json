@@ -1,8 +1,14 @@
 {
     "item": {
         "attr": {
-            "a": "<p>it's 5</p>",
-            "q": "<p>What is <span class=\"math inline\">2+2</span>?</p>"
+            "a": {
+                "content": "<p>it's 5</p>",
+                "posixTime": 1674358503
+            },
+            "q": {
+                "content": "<p>What is <span class=\"math inline\">2+2</span>?</p>",
+                "posixTime": 1674358503
+            }
         },
         "numAnswer": 1,
         "sha1": "d2786f0cdc45005f4cd9e4c3bd67870fa7c4c3a1",

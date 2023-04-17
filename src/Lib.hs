@@ -8,7 +8,7 @@ module Lib
 where
 
 import Control.Lens (over, (^.))
-import Control.Monad ((<=<))
+import Control.Monad ((<=<), when)
 import qualified Crypto.Hash.SHA1 as SHA (hash)
 import Data.Aeson (ToJSON)
 import Data.Aeson.Encode.Pretty (encodePretty)
@@ -22,9 +22,10 @@ import Data.Text (Text, pack, strip, unpack)
 import Data.Text.Encoding (decodeUtf8)
 import Data.Tree (Tree (Node), flatten, rootLabel)
 import GHC.Generics (Generic)
-import System.Directory (copyFile, createDirectoryIfMissing, removePathForcibly)
+import MyGit (creationTime)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, removePathForcibly)
 import System.Directory.Tree (DirTree (Dir, File), filterDir, readDirectoryWithL, _dirTree)
-import System.FilePath (dropFileName, isExtensionOf, makeRelative, splitDirectories, takeBaseName, takeExtension, takeFileName, (-<.>))
+import System.FilePath (dropFileName, isExtensionOf, makeRelative, splitDirectories, takeBaseName, takeDirectory, takeExtension, takeFileName, (-<.>))
 import System.FilePath.Posix (joinPath, (</>))
 import Text.Pandoc
   ( Extension (Ext_pipe_tables, Ext_tex_math_double_backslash),
@@ -43,10 +44,18 @@ import Text.Regex.PCRE.Heavy (gsub, scan)
 import Text.Regex.PCRE.Light (compile, dotall, multiline)
 import Prelude hiding (lookup, readFile, writeFile)
 
+data AttributeFile = AttributeFile
+  { posixTime :: Integer,
+    content :: Text
+  }
+  deriving (Generic, Show)
+
+instance ToJSON AttributeFile
+
 data Item = Item
   { title :: String,
     sha1 :: String,
-    attr :: Map String Text,
+    attr :: Map String AttributeFile,
     numAnswer :: Int
   }
   deriving (Generic, Show)
@@ -96,7 +105,24 @@ someFunc prefixPath src dst = do
   let dbDst = dst </> "db"
   removePathForcibly dbDst >> createDirectoryIfMissing True dbDst
   let (Dir name entries) = anchored' ^. _dirTree
-  mapM_ (writeJson dbDst) (flatten (makeTr name "" entries))
+  cwd <- getCurrentDirectory
+  putStrLn $ "src: " ++ src
+  putStrLn $ "dst: " ++ dst
+  putStrLn $ "CWD: " ++ cwd
+  putStrLn $ "Prefix: " ++ prefixPath
+  putStrLn $ "Initial path component: " ++ name
+  createTimes <- dotGitPath (cwd </> src) >>= creationTime
+  mapM_ (writeJson dbDst) (flatten (makeTr (takeDirectory src) createTimes name "" entries))
+
+dotGitPath :: FilePath -> IO FilePath
+dotGitPath fp = do
+  putStrLn $ "testing .git: " ++ fp
+  e <- doesDirectoryExist (fp </> ".git")
+  let dirName = takeDirectory fp
+  when (dirName == fp) $ error "Failed to find .git" 
+  if e
+    then return $ fp </> ".git"
+    else dotGitPath dirName
 
 subInlineMathBlock :: Text -> Text
 subInlineMathBlock =
@@ -142,12 +168,17 @@ mdToHTML txt =
 countAnswer :: Item -> Sum Int
 countAnswer = maybe 0 (const 1) . lookup "a" . attr
 
-makeTr :: String -> String -> [DirTree Text] -> Tree TemTree
-makeTr path parentSha1 entries =
+makeTr :: FilePath -> Map FilePath Integer -> String -> String -> [DirTree Text] -> Tree TemTree
+makeTr src time path parentSha1 entries =
   let sha1 = sha1InHex path
-      kidTrs = [makeTr (path </> title) sha1 entries' | Dir title entries' <- entries]
+      kidTrs = [makeTr src time (path </> title) sha1 entries' | Dir title entries' <- entries]
       kidItems = map (item . rootLabel) kidTrs
       answerNumber = getSum $ countAnswer thisItem <> foldMap (Sum . numAnswer) kidItems
-      thisItem = Item (takeFileName path) sha1 (fromList [(takeBaseName name', file) | File name' file <- entries]) answerNumber
+      f filename =
+        let entry = src </> path </> filename
+         in case lookup entry time of
+              Just x -> x
+              Nothing -> error entry
+      thisItem = Item (takeFileName path) sha1 (fromList [(takeBaseName name', AttributeFile (f name') file) | File name' file <- entries]) answerNumber
       thisNode = TemTree path thisItem kidItems parentSha1
    in Node thisNode kidTrs

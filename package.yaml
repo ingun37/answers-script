@@ -36,6 +36,7 @@ dependencies:
 - aeson
 - utf8-string
 - aeson-pretty
+- hlibgit2
 
 ghc-options:
 - -Wall
