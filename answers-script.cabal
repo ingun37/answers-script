@@ -1,113 +1,81 @@
-cabal-version: 1.12
+cabal-version:      3.0
+name:               answers-script
+version:            0.1.0.0
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
---
--- see: https://github.com/sol/hpack
+-- A short (one-line) description of the package.
+-- synopsis:
 
-name:           answers-script
-version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/answers-script#readme>
-homepage:       https://github.com/githubuser/answers-script#readme
-bug-reports:    https://github.com/githubuser/answers-script/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2022 Author name here
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
-extra-source-files:
-    README.md
-    CHANGELOG.md
+-- A longer description of the package.
+-- description:
 
-source-repository head
-  type: git
-  location: https://github.com/githubuser/answers-script
+-- A URL where users can report bugs.
+-- bug-reports:
+
+-- The license under which the package is released.
+-- license:
+author:             Ingun Jon
+maintainer:         ingun37@gmail.com
+
+-- A copyright notice.
+-- copyright:
+-- category:
+extra-source-files: CHANGELOG.md
 
 library
-  exposed-modules:
-      Lib
-      MyGit
-  other-modules:
-      Paths_answers_script
-  hs-source-dirs:
-      src
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
-  build-depends:
-      aeson
-    , aeson-pretty
-    , base >=4.7 && <5
-    , base16-bytestring
-    , bytestring
-    , containers
-    , cryptohash-sha1
-    , directory
-    , directory-tree
-    , filepath
-    , hlibgit2
-    , lens
-    , pandoc
-    , pcre-heavy
-    , pcre-light
-    , text
-    , utf8-string
-  default-language: Haskell2010
+    exposed-modules:  Lib, MyGit
 
-executable answers-script-exe
-  main-is: Main.hs
-  other-modules:
-      Paths_answers_script
-  hs-source-dirs:
-      app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      aeson
-    , aeson-pretty
-    , answers-script
-    , base >=4.7 && <5
-    , base16-bytestring
-    , bytestring
-    , containers
-    , cryptohash-sha1
-    , directory
-    , directory-tree
-    , filepath
-    , hlibgit2
-    , lens
-    , optparse-applicative
-    , pandoc
-    , pcre-heavy
-    , pcre-light
-    , text
-    , utf8-string
-  default-language: Haskell2010
+    -- Modules included in this library but not exported.
+    -- other-modules:
 
-test-suite answers-script-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Paths_answers_script
-  hs-source-dirs:
-      test
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      QuickCheck
-    , aeson
-    , aeson-pretty
-    , answers-script
-    , base >=4.7 && <5
-    , base16-bytestring
-    , bytestring
-    , containers
-    , cryptohash-sha1
-    , directory
-    , directory-tree
-    , filepath
-    , hlibgit2
-    , hspec
-    , lens
-    , pandoc
-    , pcre-heavy
-    , pcre-light
-    , text
-    , utf8-string
-  default-language: Haskell2010
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+    build-depends:    
+        base ^>=4.16.4.0, 
+        aeson,
+        hlibgit2,
+        containers,
+        lens,
+        cryptohash-sha1,
+        directory,
+        directory-tree,
+        pandoc,
+        pcre-heavy,
+        pcre-light,
+        filepath,
+        text,
+        bytestring,
+        base16-bytestring,
+        aeson-pretty
+    hs-source-dirs:   src
+    default-language: Haskell2010
+    
+executable answers-script
+    main-is:          Main.hs
+
+    -- Modules included in this executable, other than Main.
+    -- other-modules:
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+    build-depends:
+        base ^>=4.16.4.0,
+        answers-script,
+        optparse-applicative
+
+    hs-source-dirs:   app
+    default-language: Haskell2010
+
+Test-Suite test
+    type:             exitcode-stdio-1.0
+    main-is:          Spec.hs
+    hs-source-dirs:   test
+    default-language: Haskell2010
+    build-depends:
+        base ^>=4.16.4.0,
+        answers-script,
+        hspec,
+        QuickCheck,
+        directory,
+        filepath,
+        bytestring,
+        directory-tree
