@@ -4,14 +4,14 @@
 
 ```shell
 nix-shell -p cabal2nix
-cabal2nix ./. > default.nix
+cabal2nix --no-check ./. > default.nix
 ```
 
 ## Generate shell.nix
 
 ```shell
 nix-shell -p cabal2nix
-cabal2nix --shell ./. > shell.nix
+cabal2nix --shell --no-check ./. > shell.nix
 ```
 
 ## Build
@@ -25,6 +25,13 @@ Build in Nix environment
 nix-shell
 # Use executable
 answers-script ...
+```
+
+## Test
+
+```shell
+nix-shell
+cabal --enable-nix test
 ```
 
 ## Install from other machines
