@@ -16,7 +16,9 @@ mkDerivation {
     pandoc pcre-heavy pcre-light text
   ];
   executableHaskellDepends = [ base optparse-applicative ];
-  testHaskellDepends = [ base hspec QuickCheck ];
+  testHaskellDepends = [
+    base bytestring directory directory-tree filepath hspec QuickCheck
+  ];
   doCheck = false;
   license = "unknown";
   mainProgram = "answers-script";
