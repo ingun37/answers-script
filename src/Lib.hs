@@ -130,13 +130,12 @@ someFunc prefixPath src'' dst = do
   removePathForcibly dbDst >> createDirectoryIfMissing True dbDst
   let (Dir name entries) = anchored' ^. _dirTree
   putStrLn "==============================="
-  putStrLn $ "canonical src   : " ++ src
-  putStrLn $ "dst             : " ++ dst
-  putStrLn $ "Prefix          : " ++ prefixPath
-  putStrLn $ "Name of src dir : " ++ name
+  putStrLn $ "canonical src   :" ++ src
+  putStrLn $ "dst             :" ++ dst
+  putStrLn $ "Prefix          :" ++ prefixPath
+  putStrLn $ "Name of src dir :" ++ name
   putStrLn "==============================="
   creationTimeForFiles <- mapKeys (name </>) <$> creationTime src
-  print creationTimeForFiles
   mapM_ (writeJson dbDst) (flatten (makeTr creationTimeForFiles name "" entries))
 
 subInlineMathBlock :: Text -> Text

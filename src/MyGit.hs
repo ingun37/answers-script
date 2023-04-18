@@ -33,12 +33,17 @@ withPointers f = alloca $ \x -> do
       f (Pointers x y z)
 
 creationTime :: FilePath -> IO (Map FilePath Integer)
-creationTime fp = withLibGitDo $ do
-  dotGitPath <- canonicalizePath =<< getDotGitPath fp
+creationTime src = withLibGitDo $ do
+  dotGitPath <- canonicalizePath =<< getDotGitPath src
   repoPath <- canonicalizePath $ takeDirectory dotGitPath
-  let require = makeRelative repoPath fp
-  withCString dotGitPath $ \cfp -> do
-    withPointers (func require cfp)
+  let require = if repoPath == src then "" else makeRelative repoPath src
+  withCString dotGitPath $ \csrc -> do
+    putStrLn "============================"
+    putStrLn $ "src      :" ++ src
+    putStrLn $ "require  :" ++ require
+    putStrLn $ "repoPath :" ++ repoPath
+    putStrLn "============================"
+    withPointers (func require csrc)
 
 getDotGitPath :: FilePath -> IO FilePath
 getDotGitPath fp = do
@@ -88,7 +93,6 @@ makeEntryMap'' require repo prefix time entry = do
       if require `isPrefixOf` prefix
         then do
           let relPath = makeRelative require (prefix ++ name)
-          putStrLn $ "Relative: " ++ relPath
           return $ Map.singleton relPath time
         else return Map.empty
 
@@ -105,7 +109,6 @@ makeEntryMap require commit = do
     c'git_commit_tree treeP commit >>= errorCheck
     tree <- peek treeP
     time <- c'git_commit_time commit
-    putStrLn $ "Require is : " ++ require
     makeEntryMap' require "" (toInteger time) tree
 
 errorCheck r = when (r /= 0) $ error "fail"
