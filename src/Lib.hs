@@ -8,7 +8,7 @@ module Lib
 where
 
 import Control.Lens (over, (^.))
-import Control.Monad ((<=<), when)
+import Control.Monad (forM, when, (<=<))
 import qualified Crypto.Hash.SHA1 as SHA (hash)
 import Data.Aeson (ToJSON)
 import Data.Aeson.Encode.Pretty (encodePretty)
@@ -16,16 +16,39 @@ import Data.ByteString (readFile)
 import qualified Data.ByteString.Base16 as B16 (encode)
 import qualified Data.ByteString.Char8 as C8 (pack, unpack)
 import Data.ByteString.Lazy (writeFile)
-import Data.Map (Map, fromList, lookup)
+import Data.Map (Map, fromList, keys, lookup, mapKeys)
 import Data.Monoid (Sum (Sum), getSum)
 import Data.Text (Text, pack, strip, unpack)
 import Data.Text.Encoding (decodeUtf8)
 import Data.Tree (Tree (Node), flatten, rootLabel)
 import GHC.Generics (Generic)
 import MyGit (creationTime)
-import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, removePathForcibly)
-import System.Directory.Tree (DirTree (Dir, File), filterDir, readDirectoryWithL, _dirTree)
-import System.FilePath (dropFileName, isExtensionOf, makeRelative, splitDirectories, takeBaseName, takeDirectory, takeExtension, takeFileName, (-<.>))
+import System.Directory
+  ( canonicalizePath,
+    copyFile,
+    createDirectoryIfMissing,
+    removePathForcibly,
+  )
+import System.Directory.Tree
+  ( DirTree (Dir, File),
+    filterDir,
+    readDirectoryWithL,
+    _dirTree,
+  )
+import System.FilePath
+  ( FilePath,
+    dropFileName,
+    isExtensionOf,
+    joinPath,
+    makeRelative,
+    splitDirectories,
+    takeBaseName,
+    takeExtension,
+    takeFileName,
+    (-<.>),
+    (</>),
+  )
+import qualified System.FilePath as FilePath
 import System.FilePath.Posix (joinPath, (</>))
 import Text.Pandoc
   ( Extension (Ext_pipe_tables, Ext_tex_math_double_backslash),
@@ -99,30 +122,22 @@ writeJson :: String -> TemTree -> IO ()
 writeJson dst tt = writeFile (dst </> (sha1 (item tt) -<.> ".json")) (encodePretty tt)
 
 someFunc :: String -> FilePath -> FilePath -> IO ()
-someFunc prefixPath src dst = do
+someFunc prefixPath src'' dst = do
+  src <- canonicalizePath src''
   anchored <- readDirectoryWithL (theReader prefixPath src dst) src
   let anchored' = over _dirTree theFilter anchored
   let dbDst = dst </> "db"
   removePathForcibly dbDst >> createDirectoryIfMissing True dbDst
   let (Dir name entries) = anchored' ^. _dirTree
-  cwd <- getCurrentDirectory
-  putStrLn $ "src: " ++ src
-  putStrLn $ "dst: " ++ dst
-  putStrLn $ "CWD: " ++ cwd
-  putStrLn $ "Prefix: " ++ prefixPath
-  putStrLn $ "Initial path component: " ++ name
-  createTimes <- dotGitPath (cwd </> src) >>= creationTime
-  mapM_ (writeJson dbDst) (flatten (makeTr (takeDirectory src) createTimes name "" entries))
-
-dotGitPath :: FilePath -> IO FilePath
-dotGitPath fp = do
-  putStrLn $ "testing .git: " ++ fp
-  e <- doesDirectoryExist (fp </> ".git")
-  let dirName = takeDirectory fp
-  when (dirName == fp) $ error "Failed to find .git" 
-  if e
-    then return $ fp </> ".git"
-    else dotGitPath dirName
+  putStrLn "==============================="
+  putStrLn $ "canonical src   : " ++ src
+  putStrLn $ "dst             : " ++ dst
+  putStrLn $ "Prefix          : " ++ prefixPath
+  putStrLn $ "Name of src dir : " ++ name
+  putStrLn "==============================="
+  creationTimeForFiles <- mapKeys (name </>) <$> creationTime src
+  print creationTimeForFiles
+  mapM_ (writeJson dbDst) (flatten (makeTr creationTimeForFiles name "" entries))
 
 subInlineMathBlock :: Text -> Text
 subInlineMathBlock =
@@ -168,17 +183,17 @@ mdToHTML txt =
 countAnswer :: Item -> Sum Int
 countAnswer = maybe 0 (const 1) . lookup "a" . attr
 
-makeTr :: FilePath -> Map FilePath Integer -> String -> String -> [DirTree Text] -> Tree TemTree
-makeTr src time path parentSha1 entries =
+makeTr :: Map FilePath Integer -> String -> String -> [DirTree Text] -> Tree TemTree
+makeTr time path parentSha1 entries =
   let sha1 = sha1InHex path
-      kidTrs = [makeTr src time (path </> title) sha1 entries' | Dir title entries' <- entries]
+      kidTrs = [makeTr time (path </> title) sha1 entries' | Dir title entries' <- entries]
       kidItems = map (item . rootLabel) kidTrs
       answerNumber = getSum $ countAnswer thisItem <> foldMap (Sum . numAnswer) kidItems
       f filename =
-        let entry = src </> path </> filename
+        let entry = path </> filename
          in case lookup entry time of
               Just x -> x
-              Nothing -> error entry
+              Nothing -> error $ "Failed to read entry : " ++ entry
       thisItem = Item (takeFileName path) sha1 (fromList [(takeBaseName name', AttributeFile (f name') file) | File name' file <- entries]) answerNumber
       thisNode = TemTree path thisItem kidItems parentSha1
    in Node thisNode kidTrs
