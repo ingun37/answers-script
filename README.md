@@ -37,7 +37,7 @@ cabal --enable-nix test
 ## Install from other machines
 
 ```shell
-TAR="https://github.com/ingun37/answers-script/archive/refs/tags/test2.tar.gz"
+TAR="https://github.com/ingun37/answers-script/archive/refs/tags/1.0.1.tar.gz"
 # sandboxing
 nix-shell -p "with import <nixpkgs> {}; let f = import (fetchTarball $TAR); in haskellPackages.callPackage f {}"
 # no sandboxing
