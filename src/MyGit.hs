@@ -56,7 +56,7 @@ getDotGitPath fp = do
     else getDotGitPath dirName
 
 func :: String -> CString -> Pointers -> IO (Map FilePath Integer)
-func require repoPath pointers = do
+func matchPrefix repoPath pointers = do
   c'git_repository_open (pointers ^. repoP) repoPath >>= errorCheck
   repo <- peek $ pointers ^. repoP
   c'git_repository_head (pointers ^. headP) repo >>= errorCheck
@@ -64,9 +64,18 @@ func require repoPath pointers = do
   c'git_commit_lookup (pointers ^. commitP) repo headOid >>= errorCheck
   headCommit <- peek (pointers ^. commitP)
   lineage <- unfoldCommits headCommit
-  maps <- mapM (makeEntryMap require) lineage
+  let constructEntryMap' = constructEntrymap matchPrefix repo
+  maps <- mapM (getRootAndTime >=> uncurry constructEntryMap') lineage
   c'git_repository_free repo
   return $ Map.unionsWith min maps
+
+getRootAndTime :: Ptr C'git_commit -> IO (Ptr C'git_tree, Integer)
+getRootAndTime commit = do
+  alloca $ \rootP -> do
+    c'git_commit_tree rootP commit >>= errorCheck
+    root <- peek rootP
+    time <- c'git_commit_time commit
+    return (root, toInteger time)
 
 unfoldCommits :: Ptr C'git_commit -> IO [Ptr C'git_commit]
 unfoldCommits commit = alloca $ \parentP -> do
@@ -75,41 +84,35 @@ unfoldCommits commit = alloca $ \parentP -> do
     then peek parentP >>= unfoldCommits <&> (++ [commit])
     else return [commit]
 
-makeEntryMap'' :: String -> Ptr C'git_repository -> String -> Integer -> Ptr C'git_tree_entry -> IO (Map FilePath Integer)
-makeEntryMap'' require repo prefix time entry = do
-  entryType <- c'git_tree_entry_type entry
-  name <- c'git_tree_entry_name entry >>= peekCString
-  if entryType == c'GIT_OBJ_TREE
-    then do
-      eoid <- c'git_tree_entry_id entry
-      alloca $ \subTreeP -> do
-        c'git_tree_lookup subTreeP repo eoid >>= errorCheck
-        subTree <- peek subTreeP
-        let next = prefix ++ name ++ "/"
-        if next `isPrefixOf` require || require `isPrefixOf` next
-          then makeEntryMap' require (prefix ++ name ++ "/") time subTree
-          else return Map.empty
-    else do
-      if require `isPrefixOf` prefix
-        then do
-          let relPath = makeRelative require (prefix ++ name)
-          return $ Map.singleton relPath time
-        else return Map.empty
+constructEntrymap :: String -> Ptr C'git_repository -> Ptr C'git_tree -> Integer -> IO (Map FilePath Integer)
+constructEntrymap matchPrefix repo root time =
+  let makeEntryMap'' :: String -> Ptr C'git_tree_entry -> IO (Map FilePath Integer)
+      makeEntryMap'' parentDir entry = do
+        entryType <- c'git_tree_entry_type entry
+        name <- c'git_tree_entry_name entry >>= peekCString
+        let next = parentDir ++ name ++ "/"
+        if entryType == c'GIT_OBJ_TREE
+          then do
+            eoid <- c'git_tree_entry_id entry
+            alloca $ \subTreeP -> do
+              c'git_tree_lookup subTreeP repo eoid >>= errorCheck
+              subTree <- peek subTreeP
+              if next `isPrefixOf` matchPrefix || matchPrefix `isPrefixOf` next
+                then makeEntryMap' (parentDir ++ name ++ "/") subTree
+                else return Map.empty
+          else do
+            if matchPrefix `isPrefixOf` parentDir
+              then do
+                let relPath = makeRelative matchPrefix (parentDir ++ name)
+                return $ Map.singleton relPath time
+              else return Map.empty
 
-makeEntryMap' :: String -> String -> Integer -> Ptr C'git_tree -> IO (Map FilePath Integer)
-makeEntryMap' require prefix time tree = do
-  entryCountC <- c'git_tree_entrycount tree
-  let f = c'git_tree_entry_byindex tree
-  repo <- c'git_tree_owner tree
-  foldMap (f >=> makeEntryMap'' require repo prefix time) [0 .. (entryCountC - 1)]
-
-makeEntryMap :: String -> Ptr C'git_commit -> IO (Map FilePath Integer)
-makeEntryMap require commit = do
-  alloca $ \treeP -> do
-    c'git_commit_tree treeP commit >>= errorCheck
-    tree <- peek treeP
-    time <- c'git_commit_time commit
-    makeEntryMap' require "" (toInteger time) tree
+      makeEntryMap' :: String -> Ptr C'git_tree -> IO (Map FilePath Integer)
+      makeEntryMap' parentDir tree = do
+        entryCountC <- c'git_tree_entrycount tree
+        let f = c'git_tree_entry_byindex tree
+        foldMap (f >=> makeEntryMap'' parentDir) [0 .. (entryCountC - 1)]
+   in makeEntryMap' "" root
 
 errorCheck r = when (r /= 0) $ error "fail"
 
