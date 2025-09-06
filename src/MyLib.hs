@@ -1,4 +1,4 @@
 module MyLib (someFunc) where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+someFunc :: String -> FilePath -> FilePath -> IO ()
+someFunc prefixPath src dst = putStrLn $ "someFunc" ++ prefixPath ++ src ++ dst
