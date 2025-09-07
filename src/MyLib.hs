@@ -5,6 +5,8 @@ import Control.Lens
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
 import qualified CMark
+import qualified Data.Tree as Tree
+
 data FileType = Resource FilePath | Attribute T.Text
 instance Show FileType where
   show = \case
@@ -15,7 +17,9 @@ someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath src dst = do
     root' <- Dir.readDirectoryWithL myReader src
     let root = over Dir._dirTree (Dir.filterDir myFilter) root'
-    eff <- mapMOf Dir._dirTree myEffect root
+    let unfolder x = fmap (,x^.Dir._contents) (myEffect x)
+    tree <- Tree.unfoldTreeM unfolder (root^.Dir._dirTree)
+    
     print root
 
 myReader :: FilePath -> IO FileType
@@ -35,6 +39,6 @@ myFilter =
 myEffect :: Dir.DirTree FileType -> IO ()
 myEffect =
     \case
-        Dir.Dir name _ -> undefiend
+        Dir.Dir name _ -> undefined
         Dir.File name _ -> undefined
         _ -> undefined 
