@@ -4,7 +4,7 @@ import qualified System.FilePath as File
 import Control.Lens
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
-
+import qualified CMark
 data FileType = Resource FilePath | Attribute T.Text
 instance Show FileType where
   show = \case
@@ -13,9 +13,10 @@ instance Show FileType where
 
 someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath src dst = do
-    attributes' <- Dir.readDirectoryWithL myReader src
-    let attributes = over Dir._dirTree (Dir.filterDir myFilter) attributes'
-    print attributes
+    root' <- Dir.readDirectoryWithL myReader src
+    let root = over Dir._dirTree (Dir.filterDir myFilter) root'
+    eff <- mapMOf Dir._dirTree myEffect root
+    print root
 
 myReader :: FilePath -> IO FileType
 myReader path = do
@@ -30,3 +31,10 @@ myFilter =
         Dir.Dir name _ -> head name /= '.'
         Dir.File name _ -> True
         _ -> False
+
+myEffect :: Dir.DirTree FileType -> IO ()
+myEffect =
+    \case
+        Dir.Dir name _ -> undefiend
+        Dir.File name _ -> undefined
+        _ -> undefined 

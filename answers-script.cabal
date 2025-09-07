@@ -72,7 +72,8 @@ library
         directory-tree,
         filepath,
         lens,
-        text
+        text,
+        cmark
 
     -- Directories containing source files.
     hs-source-dirs:   src
