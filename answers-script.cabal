@@ -71,7 +71,8 @@ library
         base ^>=4.21.0.0,
         directory-tree,
         filepath,
-        lens
+        lens,
+        text
 
     -- Directories containing source files.
     hs-source-dirs:   src
