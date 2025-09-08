@@ -1,6 +1,5 @@
 module Main (main) where
-
-import qualified MyLib
+import MyLib qualified
 
 src :: FilePath
 src = "test/src"
@@ -13,5 +12,6 @@ prefix = "prefix"
 
 main :: IO ()
 main = do
-    MyLib.someFunc prefix src dst
-    putStrLn "Test suite not yet implemented."
+  MyLib.someFunc prefix src dst
+  putStrLn "Test suite not yet implemented."
+
