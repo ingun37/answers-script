@@ -136,4 +136,5 @@ test-suite answers-script-test
     -- Test dependencies.
     build-depends:
         base ^>=4.21.0.0,
-        answers-script
+        answers-script,
+        filepath

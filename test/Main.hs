@@ -1,11 +1,12 @@
 module Main (main) where
 import MyLib qualified
+import System.FilePath
 
 src :: FilePath
-src = "test/src"
+src = "test" </> "src"
 
 dst :: FilePath
-dst = "test/dst"
+dst = "test" </> "dst"
 
 prefix :: String
 prefix = "prefix"

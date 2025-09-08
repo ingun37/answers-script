@@ -19,7 +19,7 @@ import GHC.Generics qualified as Generics
 import System.Directory qualified as Dir
 import System.Directory.Tree qualified as DirTree
 import System.FilePath qualified as File
-
+import Data.List qualified as List
 sha1InHex :: String -> [Char]
 sha1InHex = C8.unpack . B16.encode . SHA.hash . C8.pack
 
@@ -61,13 +61,17 @@ myWriter source destination pathComponents tree = do
   let item = tree ^. TreeLens.root
   let currentPathComponents = pathComponents ++ [item ^. title]
   kids <- mapM (myWriter source destination currentPathComponents) (tree ^. TreeLens.branches)
-  let currentPath = File.joinPath currentPathComponents
-  let h = sha1InHex currentPath
+  let h = sha1InHex $ List.intercalate "/" currentPathComponents
   let hashDir = destination File.</> "sha1" File.</> h
   let writeFileType key =
         \case
-          Resource -> Dir.copyFile (source File.</> currentPath File.</> key) (hashDir File.</> key)
-          Attribute (AttributeFile {_posixTime, _content}) -> print ("attribute " ++ key)
+          Resource -> do
+            let src = File.joinPath $ [source] ++ currentPathComponents ++ [key]
+            let dst = hashDir File.</> key
+            putStrLn $ "copying " ++ src ++ " -> " ++ dst
+            Dir.copyFile src dst
+          Attribute (AttributeFile {_posixTime, _content}) -> return ()
+  putStrLn $ "Processing: " ++ (take 7 h) ++ "... " ++ File.joinPath currentPathComponents
   _ <- Dir.createDirectoryIfMissing True hashDir
   _ <- Map.traverseWithKey writeFileType (item ^. files)
   let mom = Effect {_hash = h}
@@ -75,9 +79,8 @@ myWriter source destination pathComponents tree = do
 
 someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath src dst = do
-  root' <- DirTree.readDirectoryWithL myReader src
-  let root = over DirTree._dirTree (DirTree.filterDir myFilter) root'
-  tree <- Tree.unfoldTreeM unfolderM (head $ refineDir (root ^. DirTree._dirTree))
+  root <- DirTree.readDirectoryWithL myReader src
+  tree <- Tree.unfoldTreeM unfolderM (head $ refineDir (DirTree.filterDir myFilter (root^.DirTree._dirTree)))
   effects <- myWriter (File.takeDirectory src) dst [] tree
   print effects
 
