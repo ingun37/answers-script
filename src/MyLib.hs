@@ -22,9 +22,7 @@ data AttributeFile = AttributeFile
 
 data Item = Item
   { title :: String,
-    hash :: Int,
-    attr :: Map.Map String AttributeFile,
-    numAnswer :: Int
+    attr :: Map.Map String AttributeFile
   }
   deriving (Generics.Generic, Show)
 
@@ -33,28 +31,26 @@ data FileType = Resource FilePath | Attribute AttributeFile deriving (Generics.G
 isDir :: Dir.DirTree a -> Bool
 isDir = \case Dir.Dir _ _ -> True; _ -> False
 
-unfolderM :: (FilePath, Dir.DirTree FileType) -> IO (Item, [(FilePath, Dir.DirTree FileType)])
-unfolderM (fp, dt) = do
-  let pwd = fp ++ "/" ++ (dt ^. Dir._name)
+unfolderM :: Dir.DirTree FileType -> IO (Item, [Dir.DirTree FileType])
+unfolderM dt = do
   let subDirs = filter isDir (dt ^. Dir._contents)
-  return (convertToItem (pwd, dt), map (pwd,) subDirs)
+  return (convertToItem dt, subDirs)
 
 someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath src dst = do
   root' <- Dir.readDirectoryWithL myReader src
   let root = over Dir._dirTree (Dir.filterDir myFilter) root'
-  tree <- Tree.unfoldTreeM unfolderM ("", root ^. Dir._dirTree)
+  tree <- Tree.unfoldTreeM unfolderM (root ^. Dir._dirTree)
   print tree
 
 myReader :: FilePath -> IO FileType
 myReader path = do
   print path
   let ext = File.takeExtension path
-  let process = if ext == ".md" then CMark.commonmarkToHtml [] else id
   if ext `elem` [".md", ".txt"]
     then do
       content <- TIO.readFile path
-      return $ Attribute $ AttributeFile {posixTime = 0, content = process content}
+      return $ Attribute $ AttributeFile {posixTime = 0, content = content}
     else return $ Resource path
 
 myFilter :: Dir.DirTree a -> Bool
@@ -64,16 +60,14 @@ myFilter =
     Dir.File name _ -> True
     _ -> False
 
-convertToItem :: (FilePath, Dir.DirTree FileType) -> Item
+convertToItem :: Dir.DirTree FileType -> Item
 convertToItem =
   \case
-    (fp, Dir.Dir name contents) ->
+    Dir.Dir name contents ->
       let f = \case Dir.File filename (Attribute af) -> Map.singleton filename af; _ -> Map.empty
           attributes = Data.Foldable.foldMap f contents
        in Item
             { title = name,
-              hash = Hash.hash fp,
-              attr = attributes,
-              numAnswer = 0
+              attr = attributes
             }
     _ -> undefined
