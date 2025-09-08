@@ -36,9 +36,8 @@ isDir = \case Dir.Dir _ _ -> True; _ -> False
 unfolderM :: (FilePath, Dir.DirTree FileType) -> IO (Item, [(FilePath, Dir.DirTree FileType)])
 unfolderM (fp, dt) = do
   let pwd = fp ++ "/" ++ (dt ^. Dir._name)
-  item <- convertToItem (pwd, dt)
   let subDirs = filter isDir (dt ^. Dir._contents)
-  return (item, map (pwd,) subDirs)
+  return (convertToItem (pwd, dt), map (pwd,) subDirs)
 
 someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath src dst = do
@@ -65,17 +64,16 @@ myFilter =
     Dir.File name _ -> True
     _ -> False
 
-convertToItem :: (FilePath, Dir.DirTree FileType) -> IO Item
+convertToItem :: (FilePath, Dir.DirTree FileType) -> Item
 convertToItem =
   \case
-    (fp, Dir.Dir name contents) -> do
+    (fp, Dir.Dir name contents) ->
       let f = \case Dir.File filename (Attribute af) -> Map.singleton filename af; _ -> Map.empty
-      let attributes = Data.Foldable.foldMap f contents
-      return
-        Item
-          { title = name,
-            hash = Hash.hash fp,
-            attr = attributes,
-            numAnswer = 0
-          }
+          attributes = Data.Foldable.foldMap f contents
+       in Item
+            { title = name,
+              hash = Hash.hash fp,
+              attr = attributes,
+              numAnswer = 0
+            }
     _ -> undefined
