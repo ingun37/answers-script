@@ -75,7 +75,10 @@ library
         text,
         cmark,
         containers,
-        hashable
+        directory,
+        cryptohash-sha1,
+        bytestring,
+        base16-bytestring
 
     -- Directories containing source files.
     hs-source-dirs:   src

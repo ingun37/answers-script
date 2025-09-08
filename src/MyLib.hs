@@ -1,47 +1,83 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module MyLib (someFunc) where
 
 import CMark qualified
 import Control.Lens
+import Control.Monad qualified as Monad
+import Crypto.Hash.SHA1 qualified as SHA (hash)
+import Data.ByteString.Base16 qualified as B16 (encode)
+import Data.ByteString.Char8 qualified as C8
 import Data.Foldable qualified
-import Data.Hashable qualified as Hash
 import Data.Map qualified as Map
 import Data.Text qualified as T
 import Data.Text.IO qualified as TIO
 import Data.Tree qualified as Tree
+import Data.Tree.Lens qualified as TreeLens
 import GHC.Generics qualified as Generics
-import System.Directory.Tree qualified as Dir
+import System.Directory qualified as Dir
+import System.Directory.Tree qualified as DirTree
 import System.FilePath qualified as File
 
+sha1InHex :: String -> [Char]
+sha1InHex = C8.unpack . B16.encode . SHA.hash . C8.pack
+
 data AttributeFile = AttributeFile
-  { posixTime :: Integer,
-    content :: T.Text
+  { _posixTime :: Integer,
+    _content :: T.Text
   }
   deriving (Generics.Generic, Show)
+
+makeLenses ''AttributeFile
+
+data Effect = Effect
+  { _hash :: String
+  }
+  deriving (Generics.Generic, Show)
+
+data FileType = Resource | Attribute AttributeFile deriving (Generics.Generic, Show)
 
 data Item = Item
-  { title :: String,
-    attr :: Map.Map String AttributeFile
+  { _title :: String,
+    _files :: Map.Map String FileType
   }
   deriving (Generics.Generic, Show)
 
-data FileType = Resource FilePath | Attribute AttributeFile deriving (Generics.Generic)
+makeLenses ''Item
 
-isDir :: Dir.DirTree a -> Bool
-isDir = \case Dir.Dir _ _ -> True; _ -> False
+isDir :: DirTree.DirTree a -> Bool
+isDir = \case DirTree.Dir _ _ -> True; _ -> False
 
-unfolderM :: Dir.DirTree FileType -> IO (Item, [Dir.DirTree FileType])
+unfolderM :: DirTree.DirTree FileType -> IO (Item, [DirTree.DirTree FileType])
 unfolderM dt = do
-  let subDirs = filter isDir (dt ^. Dir._contents)
+  let subDirs = filter isDir (dt ^. DirTree._contents)
   return (convertToItem dt, subDirs)
+
+myWriter :: FilePath -> FilePath -> [FilePath] -> Tree.Tree Item -> IO [Effect]
+myWriter source destination pathComponents tree = do
+  let item = tree ^. TreeLens.root
+  let currentPathComponents = pathComponents ++ [item ^. title]
+  kids <- mapM (myWriter source destination currentPathComponents) (tree ^. TreeLens.branches)
+  let currentPath = File.joinPath currentPathComponents
+  let h = sha1InHex currentPath
+  let hashDir = destination File.</> "sha1" File.</> h
+  let writeFileType key =
+        \case
+          Resource -> Dir.copyFile (source File.</> currentPath File.</> key) (hashDir File.</> key)
+          Attribute (AttributeFile {_posixTime, _content}) -> print ("attribute " ++ key)
+  _ <- Dir.createDirectoryIfMissing True hashDir
+  _ <- Map.traverseWithKey writeFileType (item ^. files)
+  let mom = Effect {_hash = h}
+  return $ mom : Monad.join kids
 
 someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath src dst = do
-  root' <- Dir.readDirectoryWithL myReader src
-  let root = over Dir._dirTree (Dir.filterDir myFilter) root'
-  tree <- Tree.unfoldTreeM unfolderM (root ^. Dir._dirTree)
-  print tree
+  root' <- DirTree.readDirectoryWithL myReader src
+  let root = over DirTree._dirTree (DirTree.filterDir myFilter) root'
+  tree <- Tree.unfoldTreeM unfolderM (root ^. DirTree._dirTree)
+  effects <- myWriter (File.takeDirectory src) dst [] tree
+  print effects
 
 myReader :: FilePath -> IO FileType
 myReader path = do
@@ -50,24 +86,24 @@ myReader path = do
   if ext `elem` [".md", ".txt"]
     then do
       content <- TIO.readFile path
-      return $ Attribute $ AttributeFile {posixTime = 0, content = content}
-    else return $ Resource path
+      return $ Attribute $ AttributeFile {_posixTime = 0, _content = content}
+    else return Resource
 
-myFilter :: Dir.DirTree a -> Bool
+myFilter :: DirTree.DirTree a -> Bool
 myFilter =
   \case
-    Dir.Dir name _ -> head name /= '.'
-    Dir.File name _ -> True
+    DirTree.Dir name _ -> head name /= '.'
+    DirTree.File name _ -> True
     _ -> False
 
-convertToItem :: Dir.DirTree FileType -> Item
+convertToItem :: DirTree.DirTree FileType -> Item
 convertToItem =
   \case
-    Dir.Dir name contents ->
-      let f = \case Dir.File filename (Attribute af) -> Map.singleton filename af; _ -> Map.empty
-          attributes = Data.Foldable.foldMap f contents
+    DirTree.Dir name contents ->
+      let f = \case DirTree.File filename file -> Map.singleton filename file; _ -> Map.empty
+          files = Data.Foldable.foldMap f contents
        in Item
-            { title = name,
-              attr = attributes
+            { _title = name,
+              _files = files
             }
     _ -> undefined
