@@ -10,6 +10,7 @@ import Crypto.Hash.SHA1 qualified as SHA (hash)
 import Data.ByteString.Base16 qualified as B16 (encode)
 import Data.ByteString.Char8 qualified as C8
 import Data.Foldable qualified
+import Data.List qualified as List
 import Data.Map qualified as Map
 import Data.Text qualified as T
 import Data.Text.IO qualified as TIO
@@ -19,7 +20,7 @@ import GHC.Generics qualified as Generics
 import System.Directory qualified as Dir
 import System.Directory.Tree qualified as DirTree
 import System.FilePath qualified as File
-import Data.List qualified as List
+
 sha1InHex :: String -> [Char]
 sha1InHex = C8.unpack . B16.encode . SHA.hash . C8.pack
 
@@ -46,14 +47,16 @@ data Item = Item
 
 makeLenses ''Item
 
-data RefinedDir = RefinedDir { _name :: String, _contents :: [DirTree.DirTree FileType]} deriving (Generics.Generic)
+data RefinedDir = RefinedDir {_name :: String, _contents :: [DirTree.DirTree FileType]} deriving (Generics.Generic)
+
 makeLenses ''RefinedDir
+
 refineDir :: DirTree.DirTree FileType -> [RefinedDir]
 refineDir = \case DirTree.Dir name contents -> [RefinedDir name contents]; _ -> []
 
 unfolderM :: RefinedDir -> IO (Item, [RefinedDir])
 unfolderM d = do
-  let subDirs = refineDir =<< (d^.contents)
+  let subDirs = refineDir =<< (d ^. contents)
   return (convertToItem d, subDirs)
 
 myWriter :: FilePath -> FilePath -> [FilePath] -> Tree.Tree Item -> IO [Effect]
@@ -80,7 +83,7 @@ myWriter source destination pathComponents tree = do
 someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath src dst = do
   root <- DirTree.readDirectoryWithL myReader src
-  tree <- Tree.unfoldTreeM unfolderM (head $ refineDir (DirTree.filterDir myFilter (root^.DirTree._dirTree)))
+  tree <- Tree.unfoldTreeM unfolderM (head $ refineDir (DirTree.filterDir myFilter (root ^. DirTree._dirTree)))
   effects <- myWriter (File.takeDirectory src) dst [] tree
   print effects
 
@@ -104,8 +107,8 @@ myFilter =
 convertToItem :: RefinedDir -> Item
 convertToItem d =
   let f = \case DirTree.File filename file -> Map.singleton filename file; _ -> Map.empty
-      files = Data.Foldable.foldMap f (d^.contents)
+      files = Data.Foldable.foldMap f (d ^. contents)
    in Item
-        { _title = d^.name,
+        { _title = d ^. name,
           _files = files
         }
