@@ -46,13 +46,15 @@ data Item = Item
 
 makeLenses ''Item
 
-isDir :: DirTree.DirTree a -> Bool
-isDir = \case DirTree.Dir _ _ -> True; _ -> False
+data RefinedDir = RefinedDir { _name :: String, _contents :: [DirTree.DirTree FileType]} deriving (Generics.Generic)
+makeLenses ''RefinedDir
+refineDir :: DirTree.DirTree FileType -> [RefinedDir]
+refineDir = \case DirTree.Dir name contents -> [RefinedDir name contents]; _ -> []
 
-unfolderM :: DirTree.DirTree FileType -> IO (Item, [DirTree.DirTree FileType])
-unfolderM dt = do
-  let subDirs = filter isDir (dt ^. DirTree._contents)
-  return (convertToItem dt, subDirs)
+unfolderM :: RefinedDir -> IO (Item, [RefinedDir])
+unfolderM d = do
+  let subDirs = refineDir =<< (d^.contents)
+  return (convertToItem d, subDirs)
 
 myWriter :: FilePath -> FilePath -> [FilePath] -> Tree.Tree Item -> IO [Effect]
 myWriter source destination pathComponents tree = do
@@ -75,7 +77,7 @@ someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath src dst = do
   root' <- DirTree.readDirectoryWithL myReader src
   let root = over DirTree._dirTree (DirTree.filterDir myFilter) root'
-  tree <- Tree.unfoldTreeM unfolderM (root ^. DirTree._dirTree)
+  tree <- Tree.unfoldTreeM unfolderM (head $ refineDir (root ^. DirTree._dirTree))
   effects <- myWriter (File.takeDirectory src) dst [] tree
   print effects
 
@@ -96,14 +98,11 @@ myFilter =
     DirTree.File name _ -> True
     _ -> False
 
-convertToItem :: DirTree.DirTree FileType -> Item
-convertToItem =
-  \case
-    DirTree.Dir name contents ->
-      let f = \case DirTree.File filename file -> Map.singleton filename file; _ -> Map.empty
-          files = Data.Foldable.foldMap f contents
-       in Item
-            { _title = name,
-              _files = files
-            }
-    _ -> undefined
+convertToItem :: RefinedDir -> Item
+convertToItem d =
+  let f = \case DirTree.File filename file -> Map.singleton filename file; _ -> Map.empty
+      files = Data.Foldable.foldMap f (d^.contents)
+   in Item
+        { _title = d^.name,
+          _files = files
+        }
