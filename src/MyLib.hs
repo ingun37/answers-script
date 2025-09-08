@@ -5,6 +5,7 @@ module MyLib (someFunc) where
 import CMark qualified
 import Control.Lens
 import Data.Foldable qualified
+import Data.Hashable qualified as Hash
 import Data.Map qualified as Map
 import Data.Text qualified as T
 import Data.Text.IO qualified as TIO
@@ -21,7 +22,7 @@ data AttributeFile = AttributeFile
 
 data Item = Item
   { title :: String,
-    sha1 :: String,
+    hash :: Int,
     attr :: Map.Map String AttributeFile,
     numAnswer :: Int
   }
@@ -32,16 +33,23 @@ data FileType = Resource FilePath | Attribute AttributeFile deriving (Generics.G
 isDir :: Dir.DirTree a -> Bool
 isDir = \case Dir.Dir _ _ -> True; _ -> False
 
+unfolderM :: (FilePath, Dir.DirTree FileType) -> IO (Item, [(FilePath, Dir.DirTree FileType)])
+unfolderM (fp, dt) = do
+  let pwd = fp ++ "/" ++ (dt ^. Dir._name)
+  item <- convertToItem (pwd, dt)
+  let subDirs = filter isDir (dt ^. Dir._contents)
+  return (item, map (pwd,) subDirs)
+
 someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath src dst = do
   root' <- Dir.readDirectoryWithL myReader src
   let root = over Dir._dirTree (Dir.filterDir myFilter) root'
-  let unfolderM x = fmap (,filter isDir (x ^. Dir._contents)) (convertToItem x)
-  tree <- Tree.unfoldTreeM unfolderM (root ^. Dir._dirTree)
+  tree <- Tree.unfoldTreeM unfolderM ("", root ^. Dir._dirTree)
   print tree
 
 myReader :: FilePath -> IO FileType
 myReader path = do
+  print path
   let ext = File.takeExtension path
   let process = if ext == ".md" then CMark.commonmarkToHtml [] else id
   if ext `elem` [".md", ".txt"]
@@ -57,16 +65,16 @@ myFilter =
     Dir.File name _ -> True
     _ -> False
 
-convertToItem :: Dir.DirTree FileType -> IO Item
+convertToItem :: (FilePath, Dir.DirTree FileType) -> IO Item
 convertToItem =
   \case
-    Dir.Dir name contents -> do
+    (fp, Dir.Dir name contents) -> do
       let f = \case Dir.File filename (Attribute af) -> Map.singleton filename af; _ -> Map.empty
       let attributes = Data.Foldable.foldMap f contents
       return
         Item
           { title = name,
-            sha1 = "",
+            hash = Hash.hash fp,
             attr = attributes,
             numAnswer = 0
           }

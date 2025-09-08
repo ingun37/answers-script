@@ -74,7 +74,8 @@ library
         lens,
         text,
         cmark,
-        containers
+        containers,
+        hashable
 
     -- Directories containing source files.
     hs-source-dirs:   src
