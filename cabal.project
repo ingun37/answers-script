@@ -1,0 +1,5 @@
+packages: answers-script
+source-repository-package
+   type:     git
+   location: https://github.com/jwiegley/gitlib.git
+   subdir:   gitlib

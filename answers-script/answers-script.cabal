@@ -78,7 +78,8 @@ library
         directory,
         cryptohash-sha1,
         bytestring,
-        base16-bytestring
+        base16-bytestring,
+        gitlib
 
     -- Directories containing source files.
     hs-source-dirs:   src
