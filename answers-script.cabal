@@ -61,7 +61,7 @@ library
     exposed-modules:  MyLib
 
     -- Modules included in this library but not exported.
-    -- other-modules:
+    other-modules: MyGit
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -78,7 +78,11 @@ library
         directory,
         cryptohash-sha1,
         bytestring,
-        base16-bytestring
+        base16-bytestring,
+        gitlib,
+        gitlib-libgit2,
+        time,
+        tagged
 
     -- Directories containing source files.
     hs-source-dirs:   src
