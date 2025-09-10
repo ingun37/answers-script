@@ -52,6 +52,7 @@ instance Json.ToJSON PageAttribute where
 
 data PageData = PageData
   { _hash :: String,
+    _parentHash :: String,
     _attributes :: Map.Map FilePath PageAttribute,
     _answers :: Word
   }
@@ -63,15 +64,17 @@ instance Json.ToJSON PageData where
   toEncoding = Json.genericToEncoding Json.defaultOptions
 
 instance Show PageData where
-  show (PageData x y z) =
+  show (PageData x p y z) =
     let printEntry (k, v) = "  " ++ k ++ ": " ++ show v
-     in "hash    : "
+     in "hash        : "
           ++ x
           ++ "\n"
-          ++ "answers : "
+          ++ "parent hash : "
+          ++ p
+          ++ "answers     : "
           ++ show z
           ++ "\n"
-          ++ "attributes:\n"
+          ++ "attributes  :\n"
           ++ List.intercalate "\n" (map printEntry (Map.toList y))
 
 data FileType = Resource | Attribute AttributeFile deriving (Generics.Generic, Show)
@@ -106,7 +109,8 @@ zipPath t =
 
 theWriter :: FilePath -> FilePath -> ([FilePath], Item) -> IO ()
 theWriter source destination (parentPathComponents, item) = do
-  let _pathComponents = parentPathComponents ++ [item ^. title]
+  let _pathComponents = drop 1 parentPathComponents ++ [item ^. title]
+  putStrLn $ "Creating hash with " ++ List.intercalate "/" _pathComponents ++ " ..."
   let _hash = sha1InHex $ List.intercalate "/" _pathComponents
 
   putStrLn $ "Processing: " ++ take 7 _hash ++ "... " ++ File.joinPath _pathComponents
@@ -140,18 +144,17 @@ someFunc prefixPath source destination = do
 
   let tree = zipPath $ Tree.unfoldTree myUnfolder (DirTree.filterDir myFilter $ root ^. DirTree._dirTree)
 
-  Foldable.traverse_ (theWriter (File.takeDirectory source) destination) tree
+  Foldable.traverse_ (theWriter source destination) tree
   timeTable <- MyGit.myGit source
 
   let folder (parentPathComponents, item) children =
-        let pathComponents = drop 1 parentPathComponents ++ [item ^. title]
-            path = List.intercalate "/" pathComponents
-            _hash = sha1InHex $ path
-            _time = Maybe.fromJust $ Map.lookup path timeTable
-            getTime k = Maybe.fromJust $ Map.lookup (List.intercalate "/" (pathComponents ++ [k])) timeTable
+        let parentPath = List.intercalate "/" (drop 1 parentPathComponents)
+            path = if null parentPath then item ^. title else parentPath ++ "/" ++ item ^. title
+            getTime k = Maybe.fromJust $ Map.lookup (path ++ "/" ++ k) timeTable
             _attributes = Map.fromList [(key, PageAttribute {_time = getTime key, _attributeFile}) | (key, Attribute _attributeFile) <- Map.toList (item ^. files)]
          in PageData
-              { _hash,
+              { _hash = sha1InHex path,
+                _parentHash = sha1InHex parentPath,
                 _answers = maybe 0 (const 1) (item ^. files . at "a.md") + sumOf (folded . folded . answers) children,
                 _attributes
               }
