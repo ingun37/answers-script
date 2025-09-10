@@ -84,7 +84,8 @@ library
         time,
         tagged,
         transformers,
-        monad-loops
+        monad-loops,
+        aeson
 
     -- Directories containing source files.
     hs-source-dirs:   src

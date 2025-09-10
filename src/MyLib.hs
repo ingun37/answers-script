@@ -8,6 +8,7 @@ import Control.Lens
 import Control.Lens.Fold qualified as FoldLens
 import Control.Monad qualified as Monad
 import Crypto.Hash.SHA1 qualified as SHA (hash)
+import Data.Aeson as Json
 import Data.ByteString.Base16 qualified as B16 (encode)
 import Data.ByteString.Char8 qualified as C8
 import Data.Foldable qualified as Foldable
@@ -38,10 +39,16 @@ makeLenses ''AttributeFile
 instance Show AttributeFile where
   show (AttributeFile c) = "(" ++ show (T.length c) ++ " long text)"
 
+instance Json.ToJSON AttributeFile where
+  toEncoding = Json.genericToEncoding Json.defaultOptions
+
 data PageAttribute = PageAttribute {_time :: Data.Time.ZonedTime, _attributeFile :: AttributeFile} deriving (Generics.Generic)
 
 instance Show PageAttribute where
   show (PageAttribute t af) = show af ++ ", time : " ++ show t
+
+instance Json.ToJSON PageAttribute where
+  toEncoding = Json.genericToEncoding Json.defaultOptions
 
 data PageData = PageData
   { _hash :: String,
@@ -51,6 +58,9 @@ data PageData = PageData
   deriving (Generics.Generic)
 
 makeLenses ''PageData
+
+instance Json.ToJSON PageData where
+  toEncoding = Json.genericToEncoding Json.defaultOptions
 
 instance Show PageData where
   show (PageData x y z) =
@@ -146,7 +156,12 @@ someFunc prefixPath source destination = do
                 _attributes
               }
               : Monad.join children
-  return $ Tree.foldTree folder tree
+  let pageDatas = Tree.foldTree folder tree
+  let pagesDir = destination File.</> "pages"
+  Dir.createDirectoryIfMissing True pagesDir
+  let writePageData pg = Json.encodeFile (pagesDir File.</> (pg ^. hash) ++ ".json") pg
+  Monad.forM_ pageDatas writePageData
+  return pageDatas
 
 myReader :: FilePath -> IO FileType
 myReader path = do

@@ -27,7 +27,9 @@ sample =
       )
 
 greet :: Sample -> IO ()
-greet (Sample prefixPath src dst) = someFunc prefixPath src dst
+greet (Sample prefixPath src dst) = do
+  _ <- someFunc prefixPath src dst
+  return ()
 
 main :: IO ()
 main = greet =<< execParser opts
