@@ -1,60 +1,59 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module MyGit (myGit) where
-import System.Directory qualified as Dir
-import System.FilePath ((</>))
-import Control.Monad
-import Control.Monad.IO.Class
-import Control.Monad.Loops
-import Control.Monad.Trans.Reader
-import Data.Map
-import Data.Maybe
-import Data.Tagged
-import Data.Time
-import Git
-import Git.Libgit2 qualified as LG
-import Data.ByteString.Char8 qualified as C8
 
-myGit :: FilePath -> IO (Map FilePath ZonedTime)
+import Control.Monad qualified as Monad
+import Control.Monad.IO.Class qualified as MonadIOClass
+import Control.Monad.Loops qualified as MonadLoops
+import Control.Monad.Trans.Reader qualified as Reader
+import Data.ByteString.Char8 qualified as C8
+import Data.Map qualified as Map
+import Data.Maybe qualified as Maybe
+import Data.Tagged qualified as Tagged
+import Data.Time qualified as Time
+import Git qualified
+import Git.Libgit2 qualified as LG
+
+myGit :: FilePath -> IO (Map.Map FilePath Time.ZonedTime)
 myGit repoPath = do
   let repoOpts =
-        RepositoryOptions
+        Git.RepositoryOptions
           { repoPath,
             repoWorkingDir = Nothing,
             repoIsBare = False,
             repoAutoCreate = False
           }
-  withRepository' LG.lgFactory repoOpts myGit_
+  Git.withRepository' LG.lgFactory repoOpts myGit_
 
-myGit_ :: Control.Monad.Trans.Reader.ReaderT LG.LgRepo IO (Map FilePath ZonedTime)
+myGit_ :: Reader.ReaderT LG.LgRepo IO (Map.Map FilePath Time.ZonedTime)
 myGit_ = do
-  maybeObjID <- resolveReference "HEAD"
-  let commitID = Data.Maybe.fromJust maybeObjID
-  headCommit <- lookupCommit (Tagged commitID)
+  maybeObjID <- Git.resolveReference "HEAD"
+  let commitID = Maybe.fromJust maybeObjID
+  headCommit <- Git.lookupCommit (Tagged.Tagged commitID)
   let clone x = (x, x)
   tailCommits <-
-    unfoldrM
-      (fmap (fmap clone . listToMaybe) . lookupCommitParents)
+    MonadLoops.unfoldrM
+      (fmap (fmap clone . Maybe.listToMaybe) . Git.lookupCommitParents)
       headCommit
 
-  liftIO $ putStrLn $ "Total commits : " ++ show (length tailCommits)
-  liftIO $ putStrLn $ "Last  commit  : " ++ show commitID
-  liftIO $ putStrLn $ "First commit  : " ++ show (commitOid $ last tailCommits)
+  MonadIOClass.liftIO $ putStrLn $ "Total commits : " ++ show (length tailCommits)
+  MonadIOClass.liftIO $ putStrLn $ "Last  commit  : " ++ show commitID
+  MonadIOClass.liftIO $ putStrLn $ "First commit  : " ++ show (Git.commitOid $ last tailCommits)
 
   seed <- constructEntryTimeMap headCommit
 
   timeTable' <-
-    foldM
+    Monad.foldM
       ( \xMap y -> do
           yMap <- constructEntryTimeMap y
-          return $ differenceWith (\_ b -> Just b) xMap yMap
+          return $ Map.differenceWith (\_ b -> Just b) xMap yMap
       )
       seed
       tailCommits
-  return $ mapKeys (C8.unpack . fst) timeTable'
+  return $ Map.mapKeys (C8.unpack . fst) timeTable'
 
-constructEntryTimeMap :: Commit LG.LgRepo -> ReaderT LG.LgRepo IO (Map (TreeFilePath, Oid LG.LgRepo) ZonedTime)
+constructEntryTimeMap :: Git.Commit LG.LgRepo -> Reader.ReaderT LG.LgRepo IO (Map.Map (Git.TreeFilePath, Git.Oid LG.LgRepo) Time.ZonedTime)
 constructEntryTimeMap commit = do
-  let time = signatureWhen (commitAuthor commit)
-  entries <- listTreeEntries True =<< lookupTree (commitTree commit)
-  return $ fromList [((x, untag oid), time) | (x, BlobEntry oid _) <- entries]
+  let time = Git.signatureWhen (Git.commitAuthor commit)
+  entries <- Git.listTreeEntries True =<< Git.lookupTree (Git.commitTree commit)
+  return $ Map.fromList [((x, Tagged.untag oid), time) | (x, Git.BlobEntry oid _) <- entries]
