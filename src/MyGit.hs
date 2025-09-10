@@ -4,13 +4,11 @@ module MyGit (myGit) where
 
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Loops
 import Control.Monad.Trans.Reader
-import Data.ByteString (ByteString)
 import Data.Map
-import Data.Map.Internal.Debug
 import Data.Maybe
 import Data.Tagged
-import Data.Text qualified as T
 import Data.Time
 import Git
 import Git.Libgit2 qualified as LG
@@ -31,14 +29,19 @@ f = do
   maybeObjID <- resolveReference "HEAD"
   let commitID = Data.Maybe.fromJust maybeObjID
   headCommit <- lookupCommit (Tagged commitID)
-  tailCommits <- lineage headCommit
+  let clone x = (x, x)
+  tailCommits <-
+    unfoldrM
+      (fmap (fmap clone . listToMaybe) . lookupCommitParents)
+      headCommit
+
   liftIO $ putStrLn $ "Total commits : " ++ show (length tailCommits)
   liftIO $ putStrLn $ "Last  commit  : " ++ show commitID
   liftIO $ putStrLn $ "First commit  : " ++ show (commitOid $ last tailCommits)
 
   seed <- constructEntryTimeMap headCommit
 
-  timeMap <-
+  timeTable <-
     foldM
       ( \xMap y -> do
           yMap <- constructEntryTimeMap y
@@ -46,7 +49,8 @@ f = do
       )
       seed
       tailCommits
-  liftIO $ putStrLn $ Data.Map.Internal.Debug.showTree timeMap
+
+  liftIO $ forM_ (toList timeTable) (\((fp, _), time) -> putStrLn $ show fp ++ " : " ++ show time)
   undefined
 
 constructEntryTimeMap :: Commit LG.LgRepo -> ReaderT LG.LgRepo IO (Map (TreeFilePath, Oid LG.LgRepo) ZonedTime)
@@ -67,17 +71,3 @@ filterBlobEntry (filePath, entry) =
     BlobEntry entryOid _ -> return [(filePath, untag entryOid)]
     _ -> return []
 
-lineage :: Commit LG.LgRepo -> ReaderT LG.LgRepo IO [Commit LG.LgRepo]
-lineage commit = do
-  parents <- lookupCommitParents commit
-  case parents of
-    (parent : _) -> do
-      tail <- lineage parent
-      return $ parent : tail
-    _ -> do
-      return []
-
-logOid :: ObjectOid x -> IO ()
-logOid = \case
-  BlobObjOid blobOid -> print "blob"
-  _ -> print "something else"
