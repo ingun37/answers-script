@@ -66,7 +66,7 @@ instance Json.ToJSON PageContent where
 data PageData = PageData
   { _pageContent :: PageContent,
     _parentHash :: String,
-    _children :: [PageContent]
+    _childPageContents :: [PageContent]
   }
   deriving (Generics.Generic)
 
@@ -76,9 +76,9 @@ instance Json.ToJSON PageData where
   toEncoding = Json.genericToEncoding Json.defaultOptions
 
 instance Show PageData where
-  show (PageData (PageContent t x y z) p c) =
+  show pg =
     let printEntry (k, v) = k ++ ": " ++ show v
-        attribs = NE.nonEmpty (map printEntry (Map.toList y))
+        attribs = NE.nonEmpty (map printEntry (Map.toList (pg ^. pageContent . attributes)))
         attribsStr =
           Maybe.maybe
             ""
@@ -89,15 +89,15 @@ instance Show PageData where
             )
             attribs
      in "page title  : "
-          ++ t
+          ++ pg ^. pageContent . pageTitle
           ++ "\nhash        : "
-          ++ x
+          ++ pg ^. pageContent . hash
           ++ "\nparent hash : "
-          ++ p
+          ++ pg ^. parentHash
           ++ "\nanswers     : "
-          ++ show z
+          ++ show (pg ^. pageContent . answers)
           ++ "\nchildren    : "
-          ++ show (length c)
+          ++ show (length (pg ^. childPageContents))
           ++ attribsStr
 
 data FileType = Resource | Attribute AttributeFile deriving (Generics.Generic, Show)
@@ -181,10 +181,10 @@ someFunc prefixPath source destination = do
                     { _pageTitle = item ^. title,
                       _hash = sha1InHex path,
                       _attributes,
-                      _answers = maybe 0 (const 1) (item ^. files . at "a.md") + sumOf (folded . folded . pageContent . answers) children
+                      _answers = maybe 0 (const 1) (item ^. files . at "a.md") + sumOf (folded . _head . pageContent . answers) children
                     },
                 _parentHash = sha1InHex parentPath,
-                _children = map _pageContent (Monad.join children)
+                _childPageContents = children ^.. folded . _head . pageContent
               }
               : Monad.join children
   let pageDatas = Tree.foldTree folder tree
