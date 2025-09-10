@@ -9,7 +9,6 @@ import Control.Monad qualified as Monad
 import Crypto.Hash.SHA1 qualified as SHA (hash)
 import Data.ByteString.Base16 qualified as B16 (encode)
 import Data.ByteString.Char8 qualified as C8
-import Data.Foldable qualified
 import Data.List qualified as List
 import Data.Map qualified as Map
 import Data.Text qualified as T
@@ -41,55 +40,69 @@ data FileType = Resource | Attribute AttributeFile deriving (Generics.Generic, S
 
 data Item = Item
   { _title :: String,
-    _files :: Map.Map String FileType
+    _files :: Map.Map String FileType,
+    _parentPathComponents :: [FilePath]
   }
   deriving (Generics.Generic, Show)
 
 makeLenses ''Item
 
-data RefinedDir = RefinedDir {_name :: String, _contents :: [DirTree.DirTree FileType]} deriving (Generics.Generic)
-
-makeLenses ''RefinedDir
-
-refineDir :: DirTree.DirTree FileType -> [RefinedDir]
-refineDir = \case DirTree.Dir name contents -> [RefinedDir name contents]; _ -> []
-
-unfolderM :: RefinedDir -> IO (Item, [RefinedDir])
-unfolderM d = do
-  let subDirs = refineDir =<< (d ^. contents)
-  return (convertToItem d, subDirs)
+myUnfolder :: ([FilePath], DirTree.DirTree FileType) -> (Item, [([FilePath], DirTree.DirTree FileType)])
+myUnfolder (_parentPathComponents, dt) =
+  let _title = dt ^. DirTree._name
+      contents = dt ^. DirTree._contents
+   in ( Item
+          { _title,
+            _files = Map.fromList [(x, y) | DirTree.File x y <- contents],
+            _parentPathComponents
+          },
+        [(_parentPathComponents ++ [_title], DirTree.Dir x y) | DirTree.Dir x y <- contents]
+      )
 
 myWriter :: FilePath -> FilePath -> [FilePath] -> Tree.Tree Item -> IO [Effect]
 myWriter source destination pathComponents tree = do
   let item = tree ^. TreeLens.root
   let currentPathComponents = pathComponents ++ [item ^. title]
-  kids <- mapM (myWriter source destination currentPathComponents) (tree ^. TreeLens.branches)
   let h = sha1InHex $ List.intercalate "/" currentPathComponents
+
+  putStrLn $ "Processing: " ++ take 7 h ++ "... " ++ File.joinPath currentPathComponents
+
   let hashDir = destination File.</> "sha1" File.</> h
+
+  let copyResource key = do
+        let src = File.joinPath $ [source] ++ currentPathComponents ++ [key]
+        let dst = hashDir File.</> key
+        putStrLn $ "  Copying " ++ src ++ " -> " ++ dst
+        Dir.copyFile src dst
+
+  let compileMarkdown key _content = do
+        let src = File.joinPath $ [source] ++ currentPathComponents ++ [key]
+        let dst = hashDir File.</> key ++ ".html"
+        putStrLn $ "  Compiling " ++ src ++ " -> " ++ dst
+        TIO.writeFile dst (CMark.commonmarkToHtml [] _content)
+
   let writeFileType key =
         \case
-          Resource -> do
-            let src = File.joinPath $ [source] ++ currentPathComponents ++ [key]
-            let dst = hashDir File.</> key
-            putStrLn $ "copying " ++ src ++ " -> " ++ dst
-            Dir.copyFile src dst
-          Attribute (AttributeFile {_posixTime, _content}) -> return ()
-  putStrLn $ "Processing: " ++ (take 7 h) ++ "... " ++ File.joinPath currentPathComponents
+          Resource -> copyResource key
+          Attribute (AttributeFile {_posixTime, _content}) ->
+            Monad.when (File.takeExtension key == ".md") $ compileMarkdown key _content
   _ <- Dir.createDirectoryIfMissing True hashDir
   _ <- Map.traverseWithKey writeFileType (item ^. files)
   let mom = Effect {_hash = h}
+  kids <- mapM (myWriter source destination currentPathComponents) (tree ^. TreeLens.branches)
   return $ mom : Monad.join kids
 
 someFunc :: String -> FilePath -> FilePath -> IO ()
-someFunc prefixPath src dst = do
-  root <- DirTree.readDirectoryWithL myReader src
-  tree <- Tree.unfoldTreeM unfolderM (head $ refineDir (DirTree.filterDir myFilter (root ^. DirTree._dirTree)))
-  effects <- myWriter (File.takeDirectory src) dst [] tree
+someFunc prefixPath source destination = do
+  root <- DirTree.readDirectoryWithL myReader source
+  let refinedDir = DirTree.filterDir myFilter (root ^. DirTree._dirTree)
+  let tree = Tree.unfoldTree myUnfolder ([], refinedDir)
+
+  effects <- myWriter (File.takeDirectory source) destination [] tree
   print effects
 
 myReader :: FilePath -> IO FileType
 myReader path = do
-  print path
   let ext = File.takeExtension path
   if ext `elem` [".md", ".txt"]
     then do
@@ -103,12 +116,3 @@ myFilter =
     DirTree.Dir name _ -> head name /= '.'
     DirTree.File name _ -> True
     _ -> False
-
-convertToItem :: RefinedDir -> Item
-convertToItem d =
-  let f = \case DirTree.File filename file -> Map.singleton filename file; _ -> Map.empty
-      files = Data.Foldable.foldMap f (d ^. contents)
-   in Item
-        { _title = d ^. name,
-          _files = files
-        }
