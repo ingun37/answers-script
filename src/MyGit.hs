@@ -13,6 +13,7 @@ import Data.Tagged
 import Data.Time
 import Git
 import Git.Libgit2 qualified as LG
+import Data.ByteString.Char8 qualified as C8
 
 myGit :: FilePath -> IO (Map FilePath ZonedTime)
 myGit repoPath = do
@@ -50,7 +51,7 @@ myGit_ = do
       )
       seed
       tailCommits
-  return $ mapKeys (show . fst) timeTable'
+  return $ mapKeys (C8.unpack . fst) timeTable'
 
 constructEntryTimeMap :: Commit LG.LgRepo -> ReaderT LG.LgRepo IO (Map (TreeFilePath, Oid LG.LgRepo) ZonedTime)
 constructEntryTimeMap commit = do
