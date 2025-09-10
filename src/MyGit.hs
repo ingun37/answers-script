@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module MyGit (myGit) where
-
+import System.Directory qualified as Dir
+import System.FilePath ((</>))
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Loops

@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module MyLib (someFunc) where
-
+import MyGit qualified
 import CMark qualified
 import Control.Lens
 import Control.Monad qualified as Monad
@@ -24,7 +24,7 @@ sha1InHex :: String -> [Char]
 sha1InHex = C8.unpack . B16.encode . SHA.hash . C8.pack
 
 data AttributeFile = AttributeFile
-  { _posixTime :: Integer,
+  {
     _content :: T.Text
   }
   deriving (Generics.Generic, Show)
@@ -32,7 +32,8 @@ data AttributeFile = AttributeFile
 makeLenses ''AttributeFile
 
 data Effect = Effect
-  { _hash :: String
+  { _hash :: String,
+    _pathComponents :: [FilePath]
   }
   deriving (Generics.Generic, Show)
 
@@ -62,21 +63,21 @@ myUnfolder (_parentPathComponents, dt) =
 myWriter :: FilePath -> FilePath -> [FilePath] -> Tree.Tree Item -> IO [Effect]
 myWriter source destination pathComponents tree = do
   let item = tree ^. TreeLens.root
-  let currentPathComponents = pathComponents ++ [item ^. title]
-  let h = sha1InHex $ List.intercalate "/" currentPathComponents
+  let _pathComponents = pathComponents ++ [item ^. title]
+  let _hash = sha1InHex $ List.intercalate "/" _pathComponents
 
-  putStrLn $ "Processing: " ++ take 7 h ++ "... " ++ File.joinPath currentPathComponents
+  putStrLn $ "Processing: " ++ take 7 _hash ++ "... " ++ File.joinPath _pathComponents
 
-  let hashDir = destination File.</> "sha1" File.</> h
+  let hashDir = destination File.</> "sha1" File.</> _hash
 
   let copyResource key = do
-        let src = File.joinPath $ [source] ++ currentPathComponents ++ [key]
+        let src = File.joinPath $ [source] ++ _pathComponents ++ [key]
         let dst = hashDir File.</> key
         putStrLn $ "  Copying " ++ src ++ " -> " ++ dst
         Dir.copyFile src dst
 
   let compileMarkdown key _content = do
-        let src = File.joinPath $ [source] ++ currentPathComponents ++ [key]
+        let src = File.joinPath $ [source] ++ _pathComponents ++ [key]
         let dst = hashDir File.</> key ++ ".html"
         putStrLn $ "  Compiling " ++ src ++ " -> " ++ dst
         TIO.writeFile dst (CMark.commonmarkToHtml [] _content)
@@ -84,16 +85,17 @@ myWriter source destination pathComponents tree = do
   let writeFileType key =
         \case
           Resource -> copyResource key
-          Attribute (AttributeFile {_posixTime, _content}) ->
+          Attribute (AttributeFile {_content}) ->
             Monad.when (File.takeExtension key == ".md") $ compileMarkdown key _content
   _ <- Dir.createDirectoryIfMissing True hashDir
   _ <- Map.traverseWithKey writeFileType (item ^. files)
-  let mom = Effect {_hash = h}
-  kids <- mapM (myWriter source destination currentPathComponents) (tree ^. TreeLens.branches)
+  let mom = Effect {_hash , _pathComponents }
+  kids <- mapM (myWriter source destination _pathComponents) (tree ^. TreeLens.branches)
   return $ mom : Monad.join kids
 
 someFunc :: String -> FilePath -> FilePath -> IO ()
 someFunc prefixPath source destination = do
+  timeTable <- MyGit.myGit source
   root <- DirTree.readDirectoryWithL myReader source
   let refinedDir = DirTree.filterDir myFilter (root ^. DirTree._dirTree)
   let tree = Tree.unfoldTree myUnfolder ([], refinedDir)
@@ -107,12 +109,12 @@ myReader path = do
   if ext `elem` [".md", ".txt"]
     then do
       content <- TIO.readFile path
-      return $ Attribute $ AttributeFile {_posixTime = 0, _content = content}
+      return $ Attribute $ AttributeFile {_content = content}
     else return Resource
 
 myFilter :: DirTree.DirTree a -> Bool
 myFilter =
   \case
     DirTree.Dir name _ -> head name /= '.'
-    DirTree.File name _ -> True
+    DirTree.File name _ -> head name /= '.'
     _ -> False

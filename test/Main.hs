@@ -6,7 +6,7 @@ import Control.Monad
 import Data.Map
 
 src :: FilePath
-src = "test" </> "src"
+src = "test" </> "answers-db"
 
 dst :: FilePath
 dst = "test" </> "dst"
