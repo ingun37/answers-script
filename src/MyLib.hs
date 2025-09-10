@@ -10,6 +10,7 @@ import Control.Monad qualified as Monad
 import Crypto.Hash.SHA1 qualified as SHA (hash)
 import Data.ByteString.Base16 qualified as B16 (encode)
 import Data.ByteString.Char8 qualified as C8
+import Data.Foldable qualified as Foldable
 import Data.List qualified as List
 import Data.Map qualified as Map
 import Data.Maybe qualified as Maybe
@@ -30,21 +31,38 @@ sha1InHex = C8.unpack . B16.encode . SHA.hash . C8.pack
 data AttributeFile = AttributeFile
   { _content :: T.Text
   }
-  deriving (Generics.Generic, Show)
+  deriving (Generics.Generic)
 
 makeLenses ''AttributeFile
 
-data PageAttribute = PageAttribute {_time :: Data.Time.ZonedTime, _attributeFile :: AttributeFile} deriving (Generics.Generic, Show)
+instance Show AttributeFile where
+  show (AttributeFile c) = "(" ++ show (T.length c) ++ " long text)"
+
+data PageAttribute = PageAttribute {_time :: Data.Time.ZonedTime, _attributeFile :: AttributeFile} deriving (Generics.Generic)
+
+instance Show PageAttribute where
+  show (PageAttribute t af) = show af ++ ", time : " ++ show t
 
 data PageData = PageData
   { _hash :: String,
     _attributes :: Map.Map FilePath PageAttribute,
     _answers :: Word
   }
-  deriving (Generics.Generic, Show)
+  deriving (Generics.Generic)
+
 makeLenses ''PageData
 
-
+instance Show PageData where
+  show (PageData x y z) =
+    let printEntry (k, v) = "  " ++ k ++ ": " ++ show v
+     in "hash    : "
+          ++ x
+          ++ "\n"
+          ++ "answers : "
+          ++ show z
+          ++ "\n"
+          ++ "attributes:\n"
+          ++ List.intercalate "\n" (map printEntry (Map.toList y))
 
 data FileType = Resource | Attribute AttributeFile deriving (Generics.Generic, Show)
 
@@ -76,9 +94,8 @@ zipPath t =
       branches' = over mapped (mapPrepend . zipPath) branches
    in Tree.Node ([], item) branches'
 
-myWriter :: FilePath -> FilePath -> Tree.Tree ([FilePath], Item) -> IO ()
-myWriter source destination tree = do
-  let (parentPathComponents, item) = tree ^. TreeLens.root
+theWriter :: FilePath -> FilePath -> ([FilePath], Item) -> IO ()
+theWriter source destination (parentPathComponents, item) = do
   let _pathComponents = parentPathComponents ++ [item ^. title]
   let _hash = sha1InHex $ List.intercalate "/" _pathComponents
 
@@ -105,14 +122,15 @@ myWriter source destination tree = do
             Monad.when (File.takeExtension key == ".md") $ compileMarkdown key _content
   _ <- Dir.createDirectoryIfMissing True hashDir
   _ <- Map.traverseWithKey writeFileType (item ^. files)
-  mapM_ (myWriter source destination) (tree ^. TreeLens.branches)
+  return ()
 
 someFunc :: String -> FilePath -> FilePath -> IO [PageData]
 someFunc prefixPath source destination = do
   root <- DirTree.readDirectoryWithL myReader source
 
   let tree = zipPath $ Tree.unfoldTree myUnfolder (DirTree.filterDir myFilter $ root ^. DirTree._dirTree)
-  _ <- myWriter (File.takeDirectory source) destination tree
+
+  Foldable.traverse_ (theWriter (File.takeDirectory source) destination) tree
   timeTable <- MyGit.myGit source
 
   let folder (parentPathComponents, item) children =
@@ -120,8 +138,8 @@ someFunc prefixPath source destination = do
             path = List.intercalate "/" pathComponents
             _hash = sha1InHex $ path
             _time = Maybe.fromJust $ Map.lookup path timeTable
-            getTime k af = Maybe.fromJust $ Map.lookup (List.intercalate "/" (pathComponents ++ [k])) timeTable
-            _attributes = Map.fromList [(key, PageAttribute {_time = getTime key _attributeFile, _attributeFile}) | (key, Attribute _attributeFile) <- Map.toList (item ^. files)]
+            getTime k = Maybe.fromJust $ Map.lookup (List.intercalate "/" (pathComponents ++ [k])) timeTable
+            _attributes = Map.fromList [(key, PageAttribute {_time = getTime key, _attributeFile}) | (key, Attribute _attributeFile) <- Map.toList (item ^. files)]
          in PageData
               { _hash,
                 _answers = maybe 0 (const 1) (item ^. files . at "a.md") + sumOf (folded . folded . answers) children,
@@ -135,8 +153,8 @@ myReader path = do
   let ext = File.takeExtension path
   if ext `elem` [".md", ".txt"]
     then do
-      content <- TIO.readFile path
-      return $ Attribute $ AttributeFile {_content = content}
+      _content <- TIO.readFile path
+      return $ Attribute $ AttributeFile {_content}
     else return Resource
 
 myFilter :: DirTree.DirTree a -> Bool
