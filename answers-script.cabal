@@ -58,10 +58,10 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  MyLib
+    exposed-modules:  MyLib, MyGit
 
     -- Modules included in this library but not exported.
-    other-modules: MyGit
+    -- other-modules: MyGit
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -82,7 +82,9 @@ library
         gitlib,
         gitlib-libgit2,
         time,
-        tagged
+        tagged,
+        conduit,
+        transformers
 
     -- Directories containing source files.
     hs-source-dirs:   src

@@ -1,5 +1,6 @@
 module Main (main) where
 import MyLib qualified
+import MyGit qualified
 import System.FilePath
 
 src :: FilePath
@@ -15,4 +16,4 @@ main :: IO ()
 main = do
   MyLib.someFunc prefix src dst
   putStrLn "Test suite not yet implemented."
-
+  MyGit.myGit "."

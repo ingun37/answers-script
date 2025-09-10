@@ -1,20 +1,83 @@
-{-# Language OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module MyGit where
+module MyGit (myGit) where
 
-import Git
-import Git.Libgit2
+import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Reader
+import Data.ByteString (ByteString)
+import Data.Map
+import Data.Map.Internal.Debug
+import Data.Maybe
 import Data.Tagged
+import Data.Text qualified as T
 import Data.Time
-import qualified Data.Text as T
+import Git
+import Git.Libgit2 qualified as LG
 
 myGit :: FilePath -> IO ()
 myGit repoPath = do
-    let repoOpts = RepositoryOptions { repoPath = "."
-                                     , repoWorkingDir = Nothing
-                                     , repoIsBare = False
-                                     , repoAutoCreate = False
-                                     }
-    withRepository' lgFactory repoOpts $ do
-        undefined
+  let repoOpts =
+        RepositoryOptions
+          { repoPath,
+            repoWorkingDir = Nothing,
+            repoIsBare = False,
+            repoAutoCreate = False
+          }
+  withRepository' LG.lgFactory repoOpts f
+
+f :: Control.Monad.Trans.Reader.ReaderT LG.LgRepo IO ()
+f = do
+  maybeObjID <- resolveReference "HEAD"
+  let commitID = Data.Maybe.fromJust maybeObjID
+  headCommit <- lookupCommit (Tagged commitID)
+  tailCommits <- lineage headCommit
+  liftIO $ putStrLn $ "Total commits : " ++ show (length tailCommits)
+  liftIO $ putStrLn $ "Last  commit  : " ++ show commitID
+  liftIO $ putStrLn $ "First commit  : " ++ show (commitOid $ last tailCommits)
+
+  seed <- constructEntryTimeMap headCommit
+
+  timeMap <-
+    foldM
+      ( \xMap y -> do
+          yMap <- constructEntryTimeMap y
+          return $ differenceWith (\_ b -> Just b) xMap yMap
+      )
+      seed
+      tailCommits
+  liftIO $ putStrLn $ Data.Map.Internal.Debug.showTree timeMap
+  undefined
+
+constructEntryTimeMap :: Commit LG.LgRepo -> ReaderT LG.LgRepo IO (Map (TreeFilePath, Oid LG.LgRepo) ZonedTime)
+constructEntryTimeMap commit = do
+  let treeOid = commitTree commit
+  tree <- lookupTree treeOid
+  entries <- listTreeEntries True tree
+  keys' <- mapM filterBlobEntry entries
+  let keys = join keys'
+  let author = commitAuthor commit
+  let time = signatureWhen author
+  let kvs = Prelude.map (,time) keys
+  return $ fromList kvs
+
+filterBlobEntry :: (TreeFilePath, TreeEntry LG.LgRepo) -> ReaderT LG.LgRepo IO [(TreeFilePath, Oid LG.LgRepo)]
+filterBlobEntry (filePath, entry) =
+  case entry of
+    BlobEntry entryOid _ -> return [(filePath, untag entryOid)]
+    _ -> return []
+
+lineage :: Commit LG.LgRepo -> ReaderT LG.LgRepo IO [Commit LG.LgRepo]
+lineage commit = do
+  parents <- lookupCommitParents commit
+  case parents of
+    (parent : _) -> do
+      tail <- lineage parent
+      return $ parent : tail
+    _ -> do
+      return []
+
+logOid :: ObjectOid x -> IO ()
+logOid = \case
+  BlobObjOid blobOid -> print "blob"
+  _ -> print "something else"

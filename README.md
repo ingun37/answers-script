@@ -4,6 +4,8 @@
 # for building gitlib packages 
 brew install icu4c
 brew install openssl@3
+
+# /usr/local/opt/openssl is hard coded in the gitlib build setting
 ln -s /opt/homebrew/Cellar/openssl@3/3.5.2 /usr/local/opt/openssl
 ```
 
