@@ -22,10 +22,10 @@ myGit repoPath = do
             repoIsBare = False,
             repoAutoCreate = False
           }
-  withRepository' LG.lgFactory repoOpts f
+  withRepository' LG.lgFactory repoOpts myGit_
 
-f :: Control.Monad.Trans.Reader.ReaderT LG.LgRepo IO ()
-f = do
+myGit_ :: Control.Monad.Trans.Reader.ReaderT LG.LgRepo IO ()
+myGit_ = do
   maybeObjID <- resolveReference "HEAD"
   let commitID = Data.Maybe.fromJust maybeObjID
   headCommit <- lookupCommit (Tagged commitID)
@@ -55,19 +55,6 @@ f = do
 
 constructEntryTimeMap :: Commit LG.LgRepo -> ReaderT LG.LgRepo IO (Map (TreeFilePath, Oid LG.LgRepo) ZonedTime)
 constructEntryTimeMap commit = do
-  let treeOid = commitTree commit
-  tree <- lookupTree treeOid
-  entries <- listTreeEntries True tree
-  keys' <- mapM filterBlobEntry entries
-  let keys = join keys'
-  let author = commitAuthor commit
-  let time = signatureWhen author
-  let kvs = Prelude.map (,time) keys
-  return $ fromList kvs
-
-filterBlobEntry :: (TreeFilePath, TreeEntry LG.LgRepo) -> ReaderT LG.LgRepo IO [(TreeFilePath, Oid LG.LgRepo)]
-filterBlobEntry (filePath, entry) =
-  case entry of
-    BlobEntry entryOid _ -> return [(filePath, untag entryOid)]
-    _ -> return []
-
+  let time = signatureWhen (commitAuthor commit)
+  entries <- listTreeEntries True =<< lookupTree (commitTree commit)
+  return $ fromList [((x, untag oid), time) | (x, BlobEntry oid _) <- entries]
