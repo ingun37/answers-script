@@ -12,6 +12,7 @@ import Data.ByteString.Base16 qualified as B16 (encode)
 import Data.ByteString.Char8 qualified as C8
 import Data.Foldable qualified as Foldable
 import Data.List qualified as List
+import Data.List.NonEmpty qualified as NE
 import Data.Map qualified as Map
 import Data.Maybe qualified as Maybe
 import Data.Text qualified as T
@@ -76,21 +77,28 @@ instance Json.ToJSON PageData where
 
 instance Show PageData where
   show (PageData (PageContent t x y z) p c) =
-    let printEntry (k, v) = "  " ++ k ++ ": " ++ show v
+    let printEntry (k, v) = k ++ ": " ++ show v
+        attribs = NE.nonEmpty (map printEntry (Map.toList y))
+        attribsStr =
+          Maybe.maybe
+            ""
+            ( \(x NE.:| xs) ->
+                "\nattributes  : "
+                  ++ x
+                  ++ Monad.join (map ("\n              " ++) xs)
+            )
+            attribs
      in "page title  : "
           ++ t
-          ++ "hash        : "
+          ++ "\nhash        : "
           ++ x
-          ++ "\n"
-          ++ "parent hash : "
+          ++ "\nparent hash : "
           ++ p
-          ++ "answers     : "
+          ++ "\nanswers     : "
           ++ show z
-          ++ "children    : "
+          ++ "\nchildren    : "
           ++ show (length c)
-          ++ "\n"
-          ++ "attributes  :\n"
-          ++ List.intercalate "\n" (map printEntry (Map.toList y))
+          ++ attribsStr
 
 data FileType = Resource | Attribute AttributeFile deriving (Generics.Generic, Show)
 
