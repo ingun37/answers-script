@@ -2,6 +2,8 @@ module Main (main) where
 import MyLib qualified
 import MyGit qualified
 import System.FilePath
+import Control.Monad
+import Data.Map
 
 src :: FilePath
 src = "test" </> "src"
@@ -16,4 +18,5 @@ main :: IO ()
 main = do
   MyLib.someFunc prefix src dst
   putStrLn "Test suite not yet implemented."
-  MyGit.myGit "."
+  timeTable <- MyGit.myGit "."
+  forM_ (toList timeTable) (\(fp, time) -> putStrLn $ show fp ++ " : " ++ show time)

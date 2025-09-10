@@ -13,7 +13,7 @@ import Data.Time
 import Git
 import Git.Libgit2 qualified as LG
 
-myGit :: FilePath -> IO ()
+myGit :: FilePath -> IO (Map FilePath ZonedTime)
 myGit repoPath = do
   let repoOpts =
         RepositoryOptions
@@ -24,7 +24,7 @@ myGit repoPath = do
           }
   withRepository' LG.lgFactory repoOpts myGit_
 
-myGit_ :: Control.Monad.Trans.Reader.ReaderT LG.LgRepo IO ()
+myGit_ :: Control.Monad.Trans.Reader.ReaderT LG.LgRepo IO (Map FilePath ZonedTime)
 myGit_ = do
   maybeObjID <- resolveReference "HEAD"
   let commitID = Data.Maybe.fromJust maybeObjID
@@ -41,7 +41,7 @@ myGit_ = do
 
   seed <- constructEntryTimeMap headCommit
 
-  timeTable <-
+  timeTable' <-
     foldM
       ( \xMap y -> do
           yMap <- constructEntryTimeMap y
@@ -49,9 +49,7 @@ myGit_ = do
       )
       seed
       tailCommits
-
-  liftIO $ forM_ (toList timeTable) (\((fp, _), time) -> putStrLn $ show fp ++ " : " ++ show time)
-  undefined
+  return $ mapKeys (show . fst) timeTable'
 
 constructEntryTimeMap :: Commit LG.LgRepo -> ReaderT LG.LgRepo IO (Map (TreeFilePath, Oid LG.LgRepo) ZonedTime)
 constructEntryTimeMap commit = do

@@ -83,7 +83,6 @@ library
         gitlib-libgit2,
         time,
         tagged,
-        conduit,
         transformers,
         monad-loops
 
@@ -144,4 +143,5 @@ test-suite answers-script-test
     build-depends:
         base ^>=4.21.0.0,
         answers-script,
-        filepath
+        filepath,
+        containers
