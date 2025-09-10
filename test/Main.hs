@@ -16,7 +16,8 @@ prefix = "prefix"
 
 main :: IO ()
 main = do
-  MyLib.someFunc prefix src dst
-  putStrLn "Test suite not yet implemented."
+  pageDatas <- MyLib.someFunc prefix src dst
+  print pageDatas
+  forM_ pageDatas print
   timeTable <- MyGit.myGit "."
   forM_ (toList timeTable) (\(fp, time) -> putStrLn $ show fp ++ " : " ++ show time)
