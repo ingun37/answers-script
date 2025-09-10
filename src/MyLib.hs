@@ -5,7 +5,6 @@ module MyLib (someFunc) where
 
 import CMark qualified
 import Control.Lens
-import Control.Lens.Fold qualified as FoldLens
 import Control.Monad qualified as Monad
 import Crypto.Hash.SHA1 qualified as SHA (hash)
 import Data.Aeson as Json
@@ -50,11 +49,23 @@ instance Show PageAttribute where
 instance Json.ToJSON PageAttribute where
   toEncoding = Json.genericToEncoding Json.defaultOptions
 
-data PageData = PageData
-  { _hash :: String,
-    _parentHash :: String,
+data PageContent = PageContent
+  { _pageTitle :: String,
+    _hash :: String,
     _attributes :: Map.Map FilePath PageAttribute,
     _answers :: Word
+  }
+  deriving (Generics.Generic)
+
+makeLenses ''PageContent
+
+instance Json.ToJSON PageContent where
+  toEncoding = Json.genericToEncoding Json.defaultOptions
+
+data PageData = PageData
+  { _pageContent :: PageContent,
+    _parentHash :: String,
+    _children :: [PageContent]
   }
   deriving (Generics.Generic)
 
@@ -64,15 +75,19 @@ instance Json.ToJSON PageData where
   toEncoding = Json.genericToEncoding Json.defaultOptions
 
 instance Show PageData where
-  show (PageData x p y z) =
+  show (PageData (PageContent t x y z) p c) =
     let printEntry (k, v) = "  " ++ k ++ ": " ++ show v
-     in "hash        : "
+     in "page title  : "
+          ++ t
+          ++ "hash        : "
           ++ x
           ++ "\n"
           ++ "parent hash : "
           ++ p
           ++ "answers     : "
           ++ show z
+          ++ "children    : "
+          ++ show (length c)
           ++ "\n"
           ++ "attributes  :\n"
           ++ List.intercalate "\n" (map printEntry (Map.toList y))
@@ -153,16 +168,21 @@ someFunc prefixPath source destination = do
             getTime k = Maybe.fromJust $ Map.lookup (path ++ "/" ++ k) timeTable
             _attributes = Map.fromList [(key, PageAttribute {_time = getTime key, _attributeFile}) | (key, Attribute _attributeFile) <- Map.toList (item ^. files)]
          in PageData
-              { _hash = sha1InHex path,
+              { _pageContent =
+                  PageContent
+                    { _pageTitle = item ^. title,
+                      _hash = sha1InHex path,
+                      _attributes,
+                      _answers = maybe 0 (const 1) (item ^. files . at "a.md") + sumOf (folded . folded . pageContent . answers) children
+                    },
                 _parentHash = sha1InHex parentPath,
-                _answers = maybe 0 (const 1) (item ^. files . at "a.md") + sumOf (folded . folded . answers) children,
-                _attributes
+                _children = map _pageContent (Monad.join children)
               }
               : Monad.join children
   let pageDatas = Tree.foldTree folder tree
   let pagesDir = destination File.</> "pages"
   Dir.createDirectoryIfMissing True pagesDir
-  let writePageData pg = Json.encodeFile (pagesDir File.</> (pg ^. hash) ++ ".json") pg
+  let writePageData pg = Json.encodeFile (pagesDir File.</> (pg ^. pageContent . hash) ++ ".json") pg
   Monad.forM_ pageDatas writePageData
   return pageDatas
 
