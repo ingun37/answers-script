@@ -28,5 +28,5 @@ workOnInlineMath [] = []
 
 mathBlock :: T.Text -> Node
 mathBlock text =
-  let t = T.pack "\\\\(" <> text <> T.pack ")\\\\"
+  let t = T.pack "\\\\(\n" <> text <> T.pack "\n)\\\\"
    in Node Nothing PARAGRAPH [Node Nothing (TEXT t) []]
