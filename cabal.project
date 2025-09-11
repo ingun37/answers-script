@@ -5,18 +5,18 @@ source-repository-package
     location: https://github.com/jwiegley/gitlib.git
     subdir: gitlib
     tag: bf256617179d853bdbc12e9283b3f570ebb9d9d7
-    --sha256: 17la8jq3qphy67fzxs66jn8b3qmrzdzsa6lvgciw3202hc8v3msj
+    --sha256: 13k3aymqwzpcijnjjka820nv6rkgakzbvh13glw98p1c4yhqwcbf
 
 source-repository-package
     type: git
     location: https://github.com/jwiegley/gitlib.git
     subdir: gitlib-libgit2
     tag: bf256617179d853bdbc12e9283b3f570ebb9d9d7
-    --sha256: 1cypdk77yabcbdz90miw45fxa8bfnfii9acl8w7rpr71zwsqzv0l
+    --sha256: 13k3aymqwzpcijnjjka820nv6rkgakzbvh13glw98p1c4yhqwcbf
 
 source-repository-package
     type: git
     location: https://github.com/jwiegley/gitlib.git
     subdir: hlibgit2
     tag: bf256617179d853bdbc12e9283b3f570ebb9d9d7
-    --sha256: 022mf1kavl6f50ikfw0ifcv42yaf2lyqrkr4ilxb3n9hrjcrb34j
+    --sha256: 13k3aymqwzpcijnjjka820nv6rkgakzbvh13glw98p1c4yhqwcbf
