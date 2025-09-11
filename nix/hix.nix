@@ -1,6 +1,6 @@
 {pkgs, ...}: {
   # name = "project-name";
-  compiler-nix-name = "ghc9121"; # Version of GHC to use
+  compiler-nix-name = "ghc912"; # Version of GHC to use
   # Cross compilation support:
   # crossPlatforms = p: pkgs.lib.optionals pkgs.stdenv.hostPlatform.isx86_64 ([
   #   p.mingwW64
