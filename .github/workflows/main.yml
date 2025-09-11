@@ -16,6 +16,5 @@ jobs:
         authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
     - run: |
         nix run "github:input-output-hk/haskell.nix#hix" -- init
-        sed -i 's/ghc96/ghc9121/g' nix/hix.nix
         git add flake.nix
         nix build
