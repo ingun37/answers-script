@@ -12,6 +12,7 @@ jobs:
           substituters = https://cache.iog.io/ https://cache.nixos.org/
           allow-import-from-derivation = true
           accept-flake-config = true
+          download-buffer-size = 524288000
         nix_path: nixpkgs=channel:nixos-unstable
     - uses: cachix/cachix-action@v15
       with:
