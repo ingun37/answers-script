@@ -9,7 +9,7 @@
       overlays = [ haskellNix.overlay
         (final: _prev: {
           # This overlay adds our project to pkgs
-          helloProject =
+          answersProject =
             final.haskell-nix.project' {
               src = ./.;
               compiler-nix-name = "ghc9121";
@@ -30,7 +30,7 @@
         })
       ];
       pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
-      flake = pkgs.helloProject.flake {
+      flake = pkgs.answersProject.flake {
         # This adds support for `nix build .#js-unknown-ghcjs:hello:exe:hello`
         # crossPlatforms = p: [p.ghcjs];
       };

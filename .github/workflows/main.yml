@@ -16,4 +16,4 @@ jobs:
         name: inguncache
         authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
     - run: |
-        nix-build
+        nix build .#answers-script:exe:answers-script
