@@ -22,6 +22,7 @@ import Data.Tree qualified as Tree
 import Data.Tree.Lens qualified as TreeLens
 import GHC.Generics qualified as Generics
 import MyGit qualified
+import MyMark qualified
 import System.Directory qualified as Dir
 import System.Directory.Tree qualified as DirTree
 import System.FilePath qualified as File
@@ -130,15 +131,15 @@ zipPath t =
       branches' = over mapped (mapPrepend . zipPath) branches
    in Tree.Node ([], item) branches'
 
-theWriter :: FilePath -> FilePath -> ([FilePath], Item) -> IO ()
-theWriter source destination (parentPathComponents, item) = do
+theWriter :: FilePath -> FilePath -> String -> ([FilePath], Item) -> IO ()
+theWriter source destination prefix (parentPathComponents, item) = do
   let _pathComponents = drop 1 parentPathComponents ++ [item ^. title]
   putStrLn $ "Creating hash with " ++ List.intercalate "/" _pathComponents ++ " ..."
   let _hash = sha1InHex $ List.intercalate "/" _pathComponents
 
   putStrLn $ "Processing: " ++ take 7 _hash ++ "... " ++ File.joinPath _pathComponents
 
-  let hashDir = destination File.</> "sha1" File.</> _hash
+  let hashDir = destination File.</> "resources" File.</> _hash
 
   let copyResource key = do
         let src = File.joinPath $ [source] ++ _pathComponents ++ [key]
@@ -150,7 +151,8 @@ theWriter source destination (parentPathComponents, item) = do
         let src = File.joinPath $ [source] ++ _pathComponents ++ [key]
         let dst = hashDir File.</> key ++ ".html"
         putStrLn $ "  Compiling " ++ src ++ " -> " ++ dst
-        TIO.writeFile dst (CMark.commonmarkToHtml [] _content)
+        let safePrefix = List.dropWhileEnd (== '/') $ dropWhile (== '/') prefix
+        TIO.writeFile dst (CMark.nodeToHtml [] $ MyMark.prefixImageUrl (safePrefix ++ "/resources/" ++ _hash) $ CMark.commonmarkToNode [] _content)
 
   let writeFileType key =
         \case
@@ -167,7 +169,7 @@ someFunc prefixPath source destination = do
 
   let tree = zipPath $ Tree.unfoldTree myUnfolder (DirTree.filterDir myFilter $ root ^. DirTree._dirTree)
 
-  Foldable.traverse_ (theWriter source destination) tree
+  Foldable.traverse_ (theWriter source destination prefixPath) tree
   timeTable <- MyGit.myGit source
 
   let folder (parentPathComponents, item) children =

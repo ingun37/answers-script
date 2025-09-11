@@ -58,7 +58,7 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  MyLib, MyGit
+    exposed-modules:  MyLib, MyGit, MyMark
 
     -- Modules included in this library but not exported.
     -- other-modules: MyGit
