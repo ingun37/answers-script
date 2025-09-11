@@ -5,12 +5,12 @@ import Data.Text qualified as T
 
 prefixImageUrl :: String -> Node -> Node
 prefixImageUrl prefix node =
-  let safePrefix = T.dropWhileEnd (== '/') (T.pack prefix) <> T.pack "/"
+  let safePrefix = T.pack ("/" ++ prefix ++ "/")
       replaceUrl url = if T.isPrefixOf (T.pack "http") url then url else safePrefix <> T.dropWhile (== '/') url
       recurse (Node posInfo nodeType nodes) =
         case nodeType of
           IMAGE url title -> Node Nothing (IMAGE (replaceUrl url) title) nodes
-          PARAGRAPH -> Node Nothing PARAGRAPH $ workOnInlineMath nodes
+          PARAGRAPH -> Node Nothing PARAGRAPH $ workOnInlineMath (map (prefixImageUrl prefix) nodes)
           CODE_BLOCK info text -> if info == T.pack "math" then mathBlock text else Node Nothing nodeType nodes
           _ -> Node Nothing nodeType (recurse <$> nodes)
    in recurse node

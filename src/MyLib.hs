@@ -152,7 +152,8 @@ theWriter source destination prefix (parentPathComponents, item) = do
         let dst = hashDir File.</> key ++ ".html"
         putStrLn $ "  Compiling " ++ src ++ " -> " ++ dst
         let safePrefix = List.dropWhileEnd (== '/') $ dropWhile (== '/') prefix
-        TIO.writeFile dst (CMark.nodeToHtml [] $ MyMark.prefixImageUrl (safePrefix ++ "/resources/" ++ _hash) $ CMark.commonmarkToNode [] _content)
+        let finalPrefix = List.intercalate "/" (filter (not . null) [safePrefix, "resources", _hash])
+        TIO.writeFile dst (CMark.nodeToHtml [] $ MyMark.prefixImageUrl finalPrefix $ CMark.commonmarkToNode [] _content)
 
   let writeFileType key =
         \case
