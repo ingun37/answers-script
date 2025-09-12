@@ -1,4 +1,6 @@
-# Build MacOS
+This is a Haskell script that transforms the resources from [ingun37/answers-db](https://github.com/ingun37/answers-db) into the static assets for the website [ingun37/answers](https://github.com/ingun37/answers). The nix build cache is pushed to the `inguncache` Cachix in the CI/CD here, and pulled from the CI/CD of the **answers** web app. Check out the github workflow files of both projects for the details.
+
+# Build manually on MacOS
 
 ```sh
 # for building gitlib packages 
@@ -12,8 +14,14 @@ ln -s $(brew --prefix openssl@3)/3.5.2 /usr/local/opt/openssl
 echo "export PKG_CONFIG_PATH=\"$(brew --prefix)/opt/icu4c/lib/pkgconfig\"" >> ~/.zprofile
 ```
 
+## Build
 ```sh
 cabal build
+```
+
+## Run Unit test
+```sh
+cabal test
 ```
 
 # Data flow
@@ -38,14 +46,16 @@ flowchart LR
 
 # CI/CD
 
+## Update gitlib sha1
+
 Check the sha1 of gitlib like this
 
 ```sh
-nix-shell -p nix-prefetch-git 
+nix-shell -p nix-prefetch-git
 nix-prefetch-git https://github.com/jwiegley/gitlib.git bf256617179d853bdbc12e9283b3f570ebb9d9d7 --fetch-submodules
 ```
 
-Output is like
+Output will look like this
 
 ```
 git revision is bf256617179d853bdbc12e9283b3f570ebb9d9d7
