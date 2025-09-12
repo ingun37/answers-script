@@ -145,4 +145,8 @@ test-suite answers-script-test
         base ^>=4.21.0.0,
         answers-script,
         filepath,
-        containers
+        containers,
+        directory-tree,
+        HUnit,
+        text,
+        bytestring

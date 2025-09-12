@@ -1,0 +1,17 @@
+<p>I'll refer $`\mathcal{T}`$ as $`\mathcal{T}_X`$, $`\mathcal{T}_1`$ as $`\mathcal{T}_Y`$, $`\mathcal{T}_2`$ as $`\mathcal{T}_A`$, $`\mathcal{T}_3`$ as $`\mathcal{T}_B`$.</p>
+<p>Let's define $`x \in X`$ and $`U \in \mathcal{T}_Y`$ such that $`f(x) \in U`$. By definition of continuous mapping, there must exists a $`V`$ such that $`x \in V \in \mathcal{T}_X`$ and $`f(x) \in fV \subseteq U`$.</p>
+<p>If for any $`x \in A`$ and any B-induced open set $`U_B \in \mathcal{T}_B`$, which must imply existance of $`U \in \mathcal{T}_Y`$, such that $`g(x) \in U_B`$,</p>
+<p><img src="/prefix/resources/3e8d61043ed9bdb6b3cd4f197f0203bbdcb13db1/IMG_44AF9D4BED6C-1.jpeg" alt="" /></p>
+<p>...there exists an A-induced open set $`V_A`$, which must imply existance of $`V \in \mathcal{T}_A`$, such that the image $`gV_A`$ satisfies $`g(x) \in gV_A \subseteq U_B`$, then $`g`$ must be continuous. What we have to know is that if the image $`gV_A`$is subset of  $`U_B`$, in other words, every $`x \in V_A`$ will satisfiy $`g(x) \in U_B`$. Let's proove it.</p>
+<p><img src="/prefix/resources/3e8d61043ed9bdb6b3cd4f197f0203bbdcb13db1/IMG_E7FB922B8E70-1.jpeg" alt="" /></p>
+<p>\\(
+\begin{aligned}
+    &amp; x \in V_A \\
+    &amp; \rightarrow x \in V \\
+    &amp; \rightarrow g(x) \in gV \\
+    &amp; \rightarrow g(x) \in \text{ some } U &amp; \text{ since } f \text{ is continuous} \\
+    &amp; \rightarrow g(x) \in U \cap B &amp; \text{ since codomain of } g \text{ is } B \\
+    &amp; \rightarrow g(x) \in U_B
+\end{aligned}
+
+)\\</p>
