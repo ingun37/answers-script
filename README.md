@@ -1,45 +1,72 @@
-# Answers Script
+# Build MacOS
 
-## Generate default.nix
+```sh
+# for building gitlib packages 
+brew install pkgconf
+brew install icu4c
+brew install openssl@3
 
-```shell
-nix-shell -p cabal2nix
-cabal2nix --no-check ./. > default.nix
+# /usr/local/opt/openssl is hard coded in the gitlib build setting.
+ln -s $(brew --prefix openssl@3)/3.5.2 /usr/local/opt/openssl
+
+echo "export PKG_CONFIG_PATH=\"$(brew --prefix)/opt/icu4c/lib/pkgconfig\"" >> ~/.zprofile
 ```
 
-## Generate shell.nix
-
-```shell
-nix-shell -p cabal2nix
-cabal2nix --shell --no-check ./. > shell.nix
+```sh
+cabal build
 ```
 
-## Build
+# Data flow
 
-**Don't just build using Cabal!!** it will take forever because of Pandoc.
+```mermaid
+flowchart LR
+    n1["src"] --> n2(("directory-tree<br>readDirectoryWithL"))
+    n3["myReader"] --> n2
+    n2 --> n4["AnchoredDirTree FileType"]
+    n4 --> n5(("directory-tree<br>filterDir"))
+    n5 --> n8(("unfoldTree"))
+    n9["myUnfolder"] --> n8
+    n8 --> n10["Tree Item"]
+    n11["myFilter"] --> n5
+    n10 --> n12(("recurse"))
+    n13["myWriter"] --> n12
+    n12 --> n14["[Effect]"]
 
-Build in Nix environment
-
-```shell
-# Enter Nix environment defined in shell.nix
-nix-shell
-# Use executable
-answers-script ...
+    n1@{ shape: rect}
+    n9@{ shape: rect}
 ```
 
-## Test
+# CI/CD
 
-```shell
-nix-shell
-cabal --enable-nix test
+Check the sha1 of gitlib like this
+
+```sh
+nix-shell -p nix-prefetch-git 
+nix-prefetch-git https://github.com/jwiegley/gitlib.git bf256617179d853bdbc12e9283b3f570ebb9d9d7 --fetch-submodules
 ```
 
-## Install from other machines
+Output is like
 
-```shell
-TAR="https://github.com/ingun37/answers-script/archive/refs/tags/1.0.1.tar.gz"
-# sandboxing
-nix-shell -p "with import <nixpkgs> {}; let f = import (fetchTarball $TAR); in haskellPackages.callPackage f {}"
-# no sandboxing
-nix-env --install -E "with import <nixpkgs> {}; let f = import (fetchTarball $TAR); in _: (haskellPackages.callPackage f {})"
 ```
+git revision is bf256617179d853bdbc12e9283b3f570ebb9d9d7
+path is /nix/store/63bx4k5nwjqwk7gv0a0k8adq796bjbpr-gitlib-bf25661
+git human-readable version is -- none --
+Commit date is 2025-09-04 11:17:27 -0700
+hash is 13k3aymqwzpcijnjjka820nv6rkgakzbvh13glw98p1c4yhqwcbf
+{
+  "url": "https://github.com/jwiegley/gitlib.git",
+  "rev": "bf256617179d853bdbc12e9283b3f570ebb9d9d7",
+  "date": "2025-09-04T11:17:27-07:00",
+  "path": "/nix/store/63bx4k5nwjqwk7gv0a0k8adq796bjbpr-gitlib-bf25661",
+  "sha256": "13k3aymqwzpcijnjjka820nv6rkgakzbvh13glw98p1c4yhqwcbf",
+  "hash": "sha256-bjGOoScsXJQ4fSPAvf5Ub2azLRBITSmtjOx+jqtXY44=",
+  "fetchLFS": false,
+  "fetchSubmodules": true,
+  "deepClone": false,
+  "fetchTags": false,
+  "leaveDotGit": false,
+  "rootDir": ""
+}
+```
+
+Use the "sha256" for the `--sha256` field in the `cabal.project`.

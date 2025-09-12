@@ -1,10 +1,10 @@
 module Main where
 
-import Lib (someFunc)
+import MyLib (someFunc)
 import Options.Applicative
 
 data Sample = Sample
-  { prefixPath :: String,
+  { prefix :: String,
     src :: String,
     dst :: String
   }
@@ -13,7 +13,7 @@ sample :: Parser Sample
 sample =
   Sample
     <$> strOption
-      ( long "prefixpath"
+      ( long "prefix"
           <> value ""
           <> help "prefix path of webserver"
       )
@@ -27,7 +27,9 @@ sample =
       )
 
 greet :: Sample -> IO ()
-greet (Sample prefixPath src dst) = someFunc prefixPath src dst
+greet (Sample prefix src dst) = do
+  _ <- someFunc prefix src dst
+  return ()
 
 main :: IO ()
 main = greet =<< execParser opts

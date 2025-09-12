@@ -1,0 +1,4 @@
+[submodule "test/answers-db"]
+	path = test/answers-db
+	url = https://github.com/ingun37/answers-db.git
+	branch = test-data
