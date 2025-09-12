@@ -147,6 +147,8 @@ test-suite answers-script-test
         filepath,
         containers,
         directory-tree,
-        HUnit,
+        hspec,
+        QuickCheck,
         text,
-        bytestring
+        bytestring,
+        lens
