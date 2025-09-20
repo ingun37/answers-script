@@ -25,3 +25,4 @@ source-repository-package
     type: git
     location: https://github.com/ingun37/cmark-lens.git
     tag: 4456f10deccb61419ce28811db448c266931190f
+    --sha256: 0s1zzpd1bgap403awkjar365qxsysw4lwq6i23whjydqj3whqdhb
