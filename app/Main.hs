@@ -1,17 +1,18 @@
 module Main where
 
 import MyLib (someFunc)
+import MatlabMark qualified
 import Options.Applicative
 
-data BuildAssetArgs = BuildAssetArgs
+data GenerateArgs = GenerateArgs
   { prefix :: String,
     src :: String,
     dst :: String
   }
 
-buildAssetParser :: Parser BuildAssetArgs
-buildAssetParser =
-  BuildAssetArgs
+generateParser :: Parser GenerateArgs
+generateParser =
+  GenerateArgs
     <$> strOption
       ( long "prefix"
           <> value ""
@@ -26,55 +27,55 @@ buildAssetParser =
           <> help "path to static directory"
       )
 
-buildAssetCommand :: ParserInfo BuildAssetArgs
-buildAssetCommand =
+generateCommand :: ParserInfo GenerateArgs
+generateCommand =
   info
-    (buildAssetParser <**> helper)
+    (generateParser <**> helper)
     ( fullDesc
         <> progDesc "Import answers-db into answers static asset"
         <> header "Import answers-db into answers static asset"
     )
 
-data SplitMatlabMarkdownArgs = SplitMatlabMarkdownArgs FilePath FilePath
+data MatlabMarkdownArgs = MatlabMarkdownArgs FilePath FilePath
 
-splitMatlabMarkdownParser :: Parser SplitMatlabMarkdownArgs
-splitMatlabMarkdownParser =
-  SplitMatlabMarkdownArgs
+matlabMarkdownParser :: Parser MatlabMarkdownArgs
+matlabMarkdownParser =
+  MatlabMarkdownArgs
     <$> strOption
       ( long "src"
           <> help "path to the markdown file that is exported from MATLAB"
       )
     <*> strOption
       ( long "dst"
-          <> help "path to a directory"
+          <> help "path to a directory in answers-db"
       )
 
-splitMatlabMarkdownCommand :: ParserInfo SplitMatlabMarkdownArgs
-splitMatlabMarkdownCommand =
+matlabMarkdownCommand :: ParserInfo MatlabMarkdownArgs
+matlabMarkdownCommand =
   info
-    (splitMatlabMarkdownParser <**> helper)
+    (matlabMarkdownParser <**> helper)
     ( fullDesc
         <> progDesc "Build assets from a markdown file exported from MATLAB"
         <> header "Build assets from a markdown file exported from MATLAB"
     )
 
-data Args = BuildAssets BuildAssetArgs | SplitMatlabMarkdown SplitMatlabMarkdownArgs
+data Args = Generate GenerateArgs | MatlabMarkdown MatlabMarkdownArgs
 
 -- data Args = Args { commandArgs :: CommandArgs }
 
 argsParser :: Parser Args
 argsParser =
   hsubparser
-    ( command "build-assets" (BuildAssets <$> buildAssetCommand)
-        <> command "split-matlab-markdown" (SplitMatlabMarkdown <$> splitMatlabMarkdownCommand)
+    ( command "generate" (Generate <$> generateCommand)
+        <> command "matlab-markdown" (MatlabMarkdown <$> matlabMarkdownCommand)
     )
 
 greet :: Args -> IO ()
-greet (BuildAssets (BuildAssetArgs prefix src dst)) = do
+greet (Generate (GenerateArgs prefix src dst)) = do
   _ <- someFunc prefix src dst
   return ()
-greet (SplitMatlabMarkdown (SplitMatlabMarkdownArgs src dst)) = do
-  return ()
+greet (MatlabMarkdown (MatlabMarkdownArgs src dst)) = do
+  MatlabMark.generateMatlabAnswersDB dst =<< MatlabMark.readMatlabMD src
 
 main :: IO ()
 main =
