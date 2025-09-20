@@ -58,7 +58,7 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  MyLib, MyGit, MyMark
+    exposed-modules:  MyLib, MyGit, MyMark, MatlabMark
 
     -- Modules included in this library but not exported.
     -- other-modules: MyGit
@@ -85,7 +85,9 @@ library
         tagged,
         transformers,
         monad-loops,
-        aeson
+        aeson,
+        attoparsec,
+        cmark-lens
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -145,4 +147,14 @@ test-suite answers-script-test
         base ^>=4.21.0.0,
         answers-script,
         filepath,
-        containers
+        containers,
+        directory-tree,
+        hspec,
+        QuickCheck,
+        text,
+        bytestring,
+        lens,
+        attoparsec,
+        cmark,
+        cmark-lens,
+        directory
