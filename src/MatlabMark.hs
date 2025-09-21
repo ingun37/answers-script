@@ -9,7 +9,8 @@ import Control.Lens
 import Data.Attoparsec.Text qualified as A
 import Data.Text qualified as T
 import Data.Text.IO qualified as TIO
-import System.FilePath qualified as File
+import System.Directory qualified as D
+import System.FilePath qualified as F
 
 changeMatlabMarkdownDelimeters :: T.Text -> T.Text
 changeMatlabMarkdownDelimeters = T.replace "\n  $$ " "\n```math\n" . T.replace " $$ \n" "\n``` \n" . T.replace "\n $" "\n $`" . T.replace "$\n" "`$\n"
@@ -37,10 +38,12 @@ parseVersion = do
 generateMatlabAnswersDB :: FilePath -> Node -> IO ()
 generateMatlabAnswersDB outputDirPath node =
   let (intro, groups) = groupByProblems node
-      toDoc = Node Nothing DOCUMENT
-      writeMD name nodes = TIO.writeFile (outputDirPath File.</> (name <> ".md")) (CMark.nodeToCommonmark [] Nothing (toDoc nodes))
+      toDocText = CMark.nodeToCommonmark [] Nothing . Node Nothing DOCUMENT
+      writeMD name nodes = do
+        D.createDirectory $ outputDirPath F.</> name
+        TIO.writeFile (outputDirPath F.</> name F.</> "a.md") (toDocText nodes)
    in do
-        writeMD "cover" intro
+        TIO.writeFile (outputDirPath F.</> "cover.md") (toDocText intro)
         mapM_ (uncurry writeMD) groups
 
 readMatlabMD :: FilePath -> IO Node
