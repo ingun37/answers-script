@@ -14,9 +14,6 @@ import System.Directory qualified as D
 import System.FilePath qualified as F
 import Test.Hspec
 import Control.Lens
-import CMark qualified
-import CMark.Lens
-import Data.Attoparsec.Text qualified as A
 
 main :: IO ()
 main = hspec $ do
@@ -50,6 +47,7 @@ matlab =
   do
     node <- MatlabMark.readMatlabMD $ "test" F.</> "matlab-short.md"
     let dst = "test" F.</> "matlab-dst"
+    D.removeDirectoryRecursive dst
     D.createDirectoryIfMissing True dst
     MatlabMark.generateMatlabAnswersDB dst node
     a <- DT.readDirectoryWith TIO.readFile dst

@@ -3,8 +3,8 @@
 
 module MatlabMark (generateMatlabAnswersDB, readMatlabMD) where
 
-import CMark
-import CMark.Lens
+import CMarkGFM
+import CMarkGFM.Lens
 import Control.Lens
 import Data.Attoparsec.Text qualified as A
 import Data.Text qualified as T
@@ -38,7 +38,7 @@ parseVersion = do
 generateMatlabAnswersDB :: FilePath -> Node -> IO ()
 generateMatlabAnswersDB outputDirPath node =
   let (intro, groups) = groupByProblems node
-      toDocText = CMark.nodeToCommonmark [] Nothing . Node Nothing DOCUMENT
+      toDocText = nodeToCommonmark [] Nothing . Node Nothing DOCUMENT
       writeMD name nodes = do
         D.createDirectory $ outputDirPath F.</> name
         TIO.writeFile (outputDirPath F.</> name F.</> "a.md") (toDocText nodes)
@@ -47,4 +47,4 @@ generateMatlabAnswersDB outputDirPath node =
         mapM_ (uncurry writeMD) groups
 
 readMatlabMD :: FilePath -> IO Node
-readMatlabMD mdFilePath = CMark.commonmarkToNode [] . changeMatlabMarkdownDelimeters <$> TIO.readFile mdFilePath
+readMatlabMD mdFilePath = commonmarkToNode [] [] . changeMatlabMarkdownDelimeters <$> TIO.readFile mdFilePath

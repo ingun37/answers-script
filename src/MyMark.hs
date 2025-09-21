@@ -1,6 +1,6 @@
 module MyMark (prefixImageUrl) where
 
-import CMark
+import CMarkGFM
 import Data.Text qualified as T
 
 prefixImageUrl :: String -> Node -> Node

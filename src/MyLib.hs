@@ -3,7 +3,7 @@
 
 module MyLib (someFunc) where
 
-import CMark qualified
+import CMarkGFM qualified as CMark
 import Control.Lens
 import Control.Monad qualified as Monad
 import Crypto.Hash.SHA1 qualified as SHA (hash)
@@ -153,7 +153,7 @@ theWriter source destination prefix (parentPathComponents, item) = do
         putStrLn $ "  Compiling " ++ src ++ " -> " ++ dst
         let safePrefix = List.dropWhileEnd (== '/') $ dropWhile (== '/') prefix
         let finalPrefix = List.intercalate "/" (filter (not . null) [safePrefix, "resources", _hash])
-        TIO.writeFile dst (CMark.nodeToHtml [] $ MyMark.prefixImageUrl finalPrefix $ CMark.commonmarkToNode [] _content)
+        TIO.writeFile dst (CMark.nodeToHtml [] [CMark.extTable] $ MyMark.prefixImageUrl finalPrefix $ CMark.commonmarkToNode [] [] _content)
 
   let writeFileType key =
         \case
