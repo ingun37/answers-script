@@ -5,8 +5,14 @@ module MyMark (prefixImageUrl) where
 import CMarkGFM
 import Data.Text qualified as T
 
+tableCellToHTML :: Node -> T.Text
+tableCellToHTML (Node _ _ nodes) = "<td>\n" <> T.intercalate "" (map (CMarkGFM.nodeToHtml [] []) (workOnInlineMath nodes)) <> "\n</td>"
+
+tableRowToHTML :: Node -> T.Text
+tableRowToHTML (Node _ _ nodes) = "<tr>\n" <> T.intercalate "\n" (map tableCellToHTML nodes) <> "\n</tr>"
+
 tableToInlineHTML :: [TableCellAlignment] -> [Node] -> Node
-tableToInlineHTML _ _ = Node Nothing (HTML_BLOCK "some table") []
+tableToInlineHTML _ nodes = Node Nothing (HTML_BLOCK $ "<table>\n" <> T.intercalate "\n" (map tableRowToHTML nodes) <> "\n</table>") []
 
 prefixImageUrl :: String -> Node -> Node
 prefixImageUrl prefix node =
