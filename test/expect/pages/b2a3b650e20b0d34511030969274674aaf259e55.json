@@ -1,1 +1,30 @@
-{"_pageContent":{"_pageTitle":"24. F-Algebras","_hash":"b2a3b650e20b0d34511030969274674aaf259e55","_attributes":{},"_answers":1},"_parentHash":"b614f31d04b3bc2b3d23ee4337475251429e5a9f","_childPageContents":[{"_pageTitle":"5","_hash":"c4ad78b11338182da6d1e6b792987c7319ef55d8","_attributes":{"a.md":{"_time":"2020-01-30T14:24:00+09:00","_attributeFile":{"_content":"```haskell\nmodule Un\n    ( primes\n    ) where\n\nimport Data.List\n\nprimes :: [Int]\nprimes = unfoldr (\\(prime:remains) -> Just (prime, filter (notdiv prime) remains)) [2..]\n    where notdiv p n = n `mod` p /= 0\n```"}},"q.md":{"_time":"2020-01-30T14:24:00+09:00","_attributeFile":{"_content":"Use `unfoldr` to generate a list of the first n primes."}}},"_answers":1}]}
+{
+    "_childPageContents": [
+        {
+            "_answers": 1,
+            "_attributes": {
+                "a.md": {
+                    "_attributeFile": {
+                        "_content": "```haskell\nmodule Un\n    ( primes\n    ) where\n\nimport Data.List\n\nprimes :: [Int]\nprimes = unfoldr (\\(prime:remains) -> Just (prime, filter (notdiv prime) remains)) [2..]\n    where notdiv p n = n `mod` p /= 0\n```"
+                    },
+                    "_time": "2020-01-30T14:24:00+09:00"
+                },
+                "q.md": {
+                    "_attributeFile": {
+                        "_content": "Use `unfoldr` to generate a list of the first n primes."
+                    },
+                    "_time": "2020-01-30T14:24:00+09:00"
+                }
+            },
+            "_hash": "c4ad78b11338182da6d1e6b792987c7319ef55d8",
+            "_pageTitle": "5"
+        }
+    ],
+    "_pageContent": {
+        "_answers": 1,
+        "_attributes": {},
+        "_hash": "b2a3b650e20b0d34511030969274674aaf259e55",
+        "_pageTitle": "24. F-Algebras"
+    },
+    "_parentHash": "b614f31d04b3bc2b3d23ee4337475251429e5a9f"
+}

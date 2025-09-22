@@ -1,1 +1,17 @@
-{"_pageContent":{"_pageTitle":"University Physics with Modern Physics","_hash":"0af5b76897bd59b64b3d577b459c75a1b5b6b3ca","_attributes":{},"_answers":0},"_parentHash":"2aed5404c83f7a46aa249e0a6328af756b19d513","_childPageContents":[{"_pageTitle":"11. Equilibrium and Elasticity","_hash":"ba45627f4d5702a2d14eaced7927fd3798c60167","_attributes":{},"_answers":0}]}
+{
+    "_childPageContents": [
+        {
+            "_answers": 0,
+            "_attributes": {},
+            "_hash": "ba45627f4d5702a2d14eaced7927fd3798c60167",
+            "_pageTitle": "11. Equilibrium and Elasticity"
+        }
+    ],
+    "_pageContent": {
+        "_answers": 0,
+        "_attributes": {},
+        "_hash": "0af5b76897bd59b64b3d577b459c75a1b5b6b3ca",
+        "_pageTitle": "University Physics with Modern Physics"
+    },
+    "_parentHash": "2aed5404c83f7a46aa249e0a6328af756b19d513"
+}

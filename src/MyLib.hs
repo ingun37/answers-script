@@ -195,7 +195,7 @@ someFunc prefixPath source destination = do
   let pageDatas = Tree.foldTree folder tree
   let pagesDir = destination File.</> "pages"
   Dir.createDirectoryIfMissing True pagesDir
-  let writePageData pg = B.writeFile (pagesDir File.</> (pg ^. pageContent . hash) ++ ".json") (Json.encode pg)
+  let writePageData pg = B.writeFile (pagesDir File.</> (pg ^. pageContent . hash) ++ ".json") (PrettyJson.encodePretty pg)
   Monad.forM_ pageDatas writePageData
   return pageDatas
 
