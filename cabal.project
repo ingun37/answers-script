@@ -31,3 +31,4 @@ source-repository-package
     type: git
     location: https://github.com/ingun37/cmark-gfm-lens.git
     tag: 7c57b38c7ddb8888df8b3b92800a42a1ac0ac359
+    --sha256: 0ssznk105b7ai59pr2d6i1if7h4s4f00vs810afpyby6mvfvbvfy
