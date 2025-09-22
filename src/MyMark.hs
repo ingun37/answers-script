@@ -1,17 +1,29 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module MyMark (prefixImageUrl) where
 
-import CMark
+import CMarkGFM
 import Data.Text qualified as T
+
+tableCellToHTML :: Node -> T.Text
+tableCellToHTML (Node _ _ nodes) = "<td>\n" <> T.intercalate "" (map (CMarkGFM.nodeToHtml [] []) (workOnInlineMath nodes)) <> "\n</td>"
+
+tableRowToHTML :: Node -> T.Text
+tableRowToHTML (Node _ _ nodes) = "<tr>\n" <> T.intercalate "\n" (map tableCellToHTML nodes) <> "\n</tr>"
+
+tableToInlineHTML :: [TableCellAlignment] -> [Node] -> Node
+tableToInlineHTML _ nodes = Node Nothing (HTML_BLOCK $ "<table>\n" <> T.intercalate "\n" (map tableRowToHTML nodes) <> "\n</table>") []
 
 prefixImageUrl :: String -> Node -> Node
 prefixImageUrl prefix node =
   let safePrefix = T.pack ("/" ++ prefix ++ "/")
       replaceUrl url = if T.isPrefixOf (T.pack "http") url then url else safePrefix <> T.dropWhile (== '/') url
-      recurse (Node posInfo nodeType nodes) =
+      recurse (Node _ nodeType nodes) =
         case nodeType of
           IMAGE url title -> Node Nothing (IMAGE (replaceUrl url) title) nodes
           PARAGRAPH -> Node Nothing PARAGRAPH $ workOnInlineMath (map (prefixImageUrl prefix) nodes)
           CODE_BLOCK info text -> if info == T.pack "math" then mathBlock text else Node Nothing nodeType nodes
+          TABLE aligns -> tableToInlineHTML aligns nodes
           _ -> Node Nothing nodeType (recurse <$> nodes)
    in recurse node
 

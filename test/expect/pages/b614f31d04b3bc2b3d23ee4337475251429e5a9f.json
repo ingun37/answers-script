@@ -1,1 +1,30 @@
-{"_pageContent":{"_pageTitle":"Category Theory For Programmers","_hash":"b614f31d04b3bc2b3d23ee4337475251429e5a9f","_attributes":{"author.txt":{"_time":"2022-09-25T22:34:28+09:00","_attributeFile":{"_content":"Bartosz Milewski"}}},"_answers":2},"_parentHash":"2aed5404c83f7a46aa249e0a6328af756b19d513","_childPageContents":[{"_pageTitle":"10. Natural Transformations","_hash":"54c6ff9a213b80284619a5afb7859d9d30a444bc","_attributes":{},"_answers":1},{"_pageTitle":"24. F-Algebras","_hash":"b2a3b650e20b0d34511030969274674aaf259e55","_attributes":{},"_answers":1}]}
+{
+    "_childPageContents": [
+        {
+            "_answers": 1,
+            "_attributes": {},
+            "_hash": "54c6ff9a213b80284619a5afb7859d9d30a444bc",
+            "_pageTitle": "10. Natural Transformations"
+        },
+        {
+            "_answers": 1,
+            "_attributes": {},
+            "_hash": "b2a3b650e20b0d34511030969274674aaf259e55",
+            "_pageTitle": "24. F-Algebras"
+        }
+    ],
+    "_pageContent": {
+        "_answers": 2,
+        "_attributes": {
+            "author.txt": {
+                "_attributeFile": {
+                    "_content": "Bartosz Milewski"
+                },
+                "_time": "2022-09-25T22:34:28+09:00"
+            }
+        },
+        "_hash": "b614f31d04b3bc2b3d23ee4337475251429e5a9f",
+        "_pageTitle": "Category Theory For Programmers"
+    },
+    "_parentHash": "2aed5404c83f7a46aa249e0a6328af756b19d513"
+}

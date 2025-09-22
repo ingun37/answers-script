@@ -73,7 +73,7 @@ library
         filepath,
         lens,
         text,
-        cmark,
+        cmark-gfm,
         containers,
         directory,
         cryptohash-sha1,
@@ -86,8 +86,9 @@ library
         transformers,
         monad-loops,
         aeson,
+        aeson-pretty,
         attoparsec,
-        cmark-lens
+        cmark-gfm-lens
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -155,6 +156,6 @@ test-suite answers-script-test
         bytestring,
         lens,
         attoparsec,
-        cmark,
-        cmark-lens,
+        cmark-gfm,
+        cmark-gfm-lens,
         directory

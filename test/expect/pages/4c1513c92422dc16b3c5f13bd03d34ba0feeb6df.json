@@ -1,1 +1,24 @@
-{"_pageContent":{"_pageTitle":"Topology Without Tears","_hash":"4c1513c92422dc16b3c5f13bd03d34ba0feeb6df","_attributes":{"author.txt":{"_time":"2022-09-25T22:34:28+09:00","_attributeFile":{"_content":"Sidney A. Morris"}}},"_answers":1},"_parentHash":"2aed5404c83f7a46aa249e0a6328af756b19d513","_childPageContents":[{"_pageTitle":"5. Continuous Mappings","_hash":"6c11e3a31b4b8bd07bdef3f87887ab202a568679","_attributes":{},"_answers":1}]}
+{
+    "_childPageContents": [
+        {
+            "_answers": 1,
+            "_attributes": {},
+            "_hash": "6c11e3a31b4b8bd07bdef3f87887ab202a568679",
+            "_pageTitle": "5. Continuous Mappings"
+        }
+    ],
+    "_pageContent": {
+        "_answers": 1,
+        "_attributes": {
+            "author.txt": {
+                "_attributeFile": {
+                    "_content": "Sidney A. Morris"
+                },
+                "_time": "2022-09-25T22:34:28+09:00"
+            }
+        },
+        "_hash": "4c1513c92422dc16b3c5f13bd03d34ba0feeb6df",
+        "_pageTitle": "Topology Without Tears"
+    },
+    "_parentHash": "2aed5404c83f7a46aa249e0a6328af756b19d513"
+}

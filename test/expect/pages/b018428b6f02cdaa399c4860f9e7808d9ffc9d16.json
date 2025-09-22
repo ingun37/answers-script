@@ -1,0 +1,17 @@
+{
+    "_childPageContents": [],
+    "_pageContent": {
+        "_answers": 0,
+        "_attributes": {
+            "q.md": {
+                "_attributeFile": {
+                    "_content": "You need to measure the mass $`M`$ of a $`4.00 \\text{ m}`$-long bar. The bar has a square cross section but has some holes drilled along its length, so you suspect that its center of gravity isn't in the middle of the bar. The bar is too long for you to weigh on your scale. So, first you balance the bar on a knife-edge pivot and determine that the bar's center of gravity is $`1.88 \\text{ m}`$ from its left-hand end. You then place the bar on the pivot so that the point of support is $`1.50 \\text{ m}`$ from the left-hand end of the bar. Next you suspend a $`2.00 \\text{ kg}`$ mass ($`m_1`$) from the bar at a point $`0.200 \\text{ m}`$ from the left-hand end. Finally, you suspend a mass $`m_2 = 1.00 \\text{ kg}`$ from the bar at a distance $`x`$ from the left-hand end and adjust $`x`$ so that the bar is balanced. You repeat this step for other values of $`m_2`$ and record each corresponding value of $`x`$. The table gives your results.\n\n| $`m_2`$ (kg) | 1.00 | 1.50 | 2.00 | 2.50 | 3.00 | 4.00 |\n| :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n| $`x`$ (m) | 3.50 | 2.83 | 2.50 | 2.32 | 2.16 | 2.00 |\n\n(a) Draw a free-body diagram for the bar when $`m_1`$ and $`m_2`$ are suspended from it.\n(b) Apply the static equilibrium equation $`\\Sigma\\tau_z = 0`$ with the axis at the location of the knife-edge pivot. Solve the equation for $`x`$ as a function of $`m_2`$.\n(c) Plot $`x`$ versus $`1/m_2`$. Use the slope of the best-fit straight line and the equation you derived in part (b) to calculate that bar’s mass $`M`$. Use $`g = 9.80 \\text{ m/s}^2`$.\n(d) What is the y-intercept of the straight line that fits the data? Explain why it has this value."
+                },
+                "_time": "2025-09-22T11:03:36+09:00"
+            }
+        },
+        "_hash": "b018428b6f02cdaa399c4860f9e7808d9ffc9d16",
+        "_pageTitle": "11.87"
+    },
+    "_parentHash": "ba45627f4d5702a2d14eaced7927fd3798c60167"
+}
