@@ -8,8 +8,10 @@ import Control.Lens
 import Control.Monad qualified as Monad
 import Crypto.Hash.SHA1 qualified as SHA (hash)
 import Data.Aeson as Json
+import Data.Aeson.Encode.Pretty qualified as PrettyJson
 import Data.ByteString.Base16 qualified as B16 (encode)
 import Data.ByteString.Char8 qualified as C8
+import Data.ByteString.Lazy qualified as B
 import Data.Foldable qualified as Foldable
 import Data.List qualified as List
 import Data.List.NonEmpty qualified as NE
@@ -153,7 +155,7 @@ theWriter source destination prefix (parentPathComponents, item) = do
         putStrLn $ "  Compiling " ++ src ++ " -> " ++ dst
         let safePrefix = List.dropWhileEnd (== '/') $ dropWhile (== '/') prefix
         let finalPrefix = List.intercalate "/" (filter (not . null) [safePrefix, "resources", _hash])
-        TIO.writeFile dst (CMark.nodeToHtml [] [CMark.extTable] $ MyMark.prefixImageUrl finalPrefix $ CMark.commonmarkToNode [] [] _content)
+        TIO.writeFile dst (CMark.nodeToHtml [CMark.optUnsafe] [] $ MyMark.prefixImageUrl finalPrefix $ CMark.commonmarkToNode [] [CMark.extTable] _content)
 
   let writeFileType key =
         \case
@@ -193,7 +195,7 @@ someFunc prefixPath source destination = do
   let pageDatas = Tree.foldTree folder tree
   let pagesDir = destination File.</> "pages"
   Dir.createDirectoryIfMissing True pagesDir
-  let writePageData pg = Json.encodeFile (pagesDir File.</> (pg ^. pageContent . hash) ++ ".json") pg
+  let writePageData pg = B.writeFile (pagesDir File.</> (pg ^. pageContent . hash) ++ ".json") (Json.encode pg)
   Monad.forM_ pageDatas writePageData
   return pageDatas
 

@@ -86,6 +86,7 @@ library
         transformers,
         monad-loops,
         aeson,
+        aeson-pretty,
         attoparsec,
         cmark-gfm-lens
 

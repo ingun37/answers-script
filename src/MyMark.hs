@@ -1,17 +1,23 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module MyMark (prefixImageUrl) where
 
 import CMarkGFM
 import Data.Text qualified as T
 
+tableToInlineHTML :: [TableCellAlignment] -> [Node] -> Node
+tableToInlineHTML _ _ = Node Nothing (HTML_BLOCK "some table") []
+
 prefixImageUrl :: String -> Node -> Node
 prefixImageUrl prefix node =
   let safePrefix = T.pack ("/" ++ prefix ++ "/")
       replaceUrl url = if T.isPrefixOf (T.pack "http") url then url else safePrefix <> T.dropWhile (== '/') url
-      recurse (Node posInfo nodeType nodes) =
+      recurse (Node _ nodeType nodes) =
         case nodeType of
           IMAGE url title -> Node Nothing (IMAGE (replaceUrl url) title) nodes
           PARAGRAPH -> Node Nothing PARAGRAPH $ workOnInlineMath (map (prefixImageUrl prefix) nodes)
           CODE_BLOCK info text -> if info == T.pack "math" then mathBlock text else Node Nothing nodeType nodes
+          TABLE aligns -> tableToInlineHTML aligns nodes
           _ -> Node Nothing nodeType (recurse <$> nodes)
    in recurse node
 
